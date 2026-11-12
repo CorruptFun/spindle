@@ -1,5 +1,6 @@
 .unit {
   --presence: 1;
+  position: relative;
   display: flex;
   flex: 1 1 0;
   flex-direction: column;
@@ -9,40 +10,72 @@
   min-width: 0;
 }
 
-/* What is on the deck. */
-.strip {
-  display: flex;
-  align-items: center;
-  align-self: stretch;
-  gap: var(--space-2);
-  min-height: 28px;
-}
-
-.badge {
-  display: grid;
-  flex: none;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  border-radius: var(--radius-cap);
-  background: var(--deck);
-  color: var(--chassis);
-  font-size: var(--text-s);
-  font-weight: 800;
-}
-
-.track {
-  min-width: 0;
-  overflow: hidden;
-  color: var(--ink-dim);
-  font-size: var(--text-s);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 /* Room for the colour ring that sits just outside the record. */
 .platter {
   width: 100%;
   max-width: var(--platter-max);
   padding: 10px;
+}
+
+/* Back-to-start sits to the left of play, as cue does on a real deck. */
+.transport {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+/* A smaller sibling of the transport button: same body, same press. */
+.backToStart {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--touch-min);
+  height: var(--touch-min);
+  padding: 0;
+  border: 1px solid var(--hairline);
+  border-radius: 50%;
+  background: var(--panel-raised);
+  color: var(--ink);
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.backToStart:active {
+  transform: scale(0.94);
+}
+
+.backMark {
+  width: 44%;
+  height: 44%;
+}
+
+/*
+ * A file is being dragged over the deck. The whole deck becomes the target:
+ * the dashed edge of an open slot, in the deck's colour, over a dimmed deck.
+ */
+.dropTarget {
+  position: absolute;
+  inset: calc(-1 * var(--space-2));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border: 2px dashed var(--deck);
+  border-radius: var(--radius-panel);
+  background: var(--scrim);
+  pointer-events: none;
+}
+
+.dropMark {
+  width: var(--space-7);
+  height: var(--space-7);
+  color: var(--deck);
+}
+
+.dropWord {
+  color: var(--ink);
+  font-size: var(--text-m);
+  font-weight: 650;
 }

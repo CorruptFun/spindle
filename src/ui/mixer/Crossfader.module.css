@@ -1,7 +1,7 @@
 .crossfader {
-  --cap-width: 30px;
-  --cap-height: 48px;
-  --slot-height: 10px;
+  --cap-width: var(--fader-cap);
+  --cap-height: var(--touch-min);
+  --slot-height: var(--fader-slot);
   display: flex;
   align-items: center;
   gap: var(--space-3);

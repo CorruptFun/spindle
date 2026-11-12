@@ -10,9 +10,16 @@ import type { SourceDescriptor, SourceId } from './types';
  * registry.test.ts stops anyone from quietly widening these.
  */
 export const SOURCES: Readonly<Record<SourceId, SourceDescriptor>> = {
+  crate: {
+    id: 'crate',
+    label: 'Starter songs',
+    audioPath: 'pcm',
+    capabilities: FULL_CAPABILITIES,
+    requires: [],
+  },
   local: {
     id: 'local',
-    label: 'My files',
+    label: 'My music',
     audioPath: 'pcm',
     capabilities: FULL_CAPABILITIES,
     requires: ['Audio files you own (MP3, M4A/AAC, WAV, FLAC, OGG)'],

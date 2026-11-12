@@ -1,0 +1,98 @@
+.fader {
+  --cap-travel: var(--fader-cap);
+  --cap-span: var(--touch-min);
+  --slot: var(--fader-slot);
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  height: var(--fader-length, auto);
+}
+
+/*
+ * The upright space the fader lives in. The input inside is laid out
+ * horizontally and turned a quarter left, so its length has to come from this
+ * box's height: a size container lets the input ask for it (100cqh).
+ */
+.rail {
+  position: relative;
+  flex: 1 1 auto;
+  width: var(--cap-span);
+  min-height: calc(var(--touch-min) * 2);
+  container-type: size;
+}
+
+/* As tall as the cap is wide, so the whole cap is a touch target. */
+.slot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100cqh;
+  height: var(--cap-span);
+  margin: 0;
+  background: transparent;
+  cursor: grab;
+  appearance: none;
+  -webkit-appearance: none;
+  touch-action: none;
+  /* Left becomes bottom, so 0 sits at the foot and full volume at the top. */
+  transform: translate(-50%, -50%) rotate(-90deg);
+}
+
+.slot:active {
+  cursor: grabbing;
+}
+
+/* The slot: the crossfader's recessed track, upright. */
+.slot::-webkit-slider-runnable-track {
+  height: var(--slot);
+  border: 1px solid var(--hairline);
+  border-radius: calc(var(--slot) / 2);
+  background: var(--well);
+}
+
+.slot::-moz-range-track {
+  height: var(--slot);
+  border: 1px solid var(--hairline);
+  border-radius: calc(var(--slot) / 2);
+  background: var(--well);
+}
+
+/* The cap: the crossfader's cap, with its grip line across the travel. */
+.slot::-webkit-slider-thumb {
+  width: var(--cap-travel);
+  height: var(--cap-span);
+  margin-top: calc((var(--slot) - var(--cap-span)) / 2 - 1px);
+  border: 0;
+  border-radius: var(--radius-cap);
+  background:
+    linear-gradient(var(--chassis), var(--chassis)) center / 2px 64% no-repeat,
+    var(--ink);
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.slot::-moz-range-thumb {
+  width: var(--cap-travel);
+  height: var(--cap-span);
+  border: 0;
+  border-radius: var(--radius-cap);
+  background:
+    linear-gradient(var(--chassis), var(--chassis)) center / 2px 64% no-repeat,
+    var(--ink);
+}
+
+/* Which deck this fader turns up: the same badge as the crossfader's ends. */
+.badge {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--space-5);
+  height: var(--space-5);
+  border-radius: var(--radius-cap);
+  background: var(--deck);
+  color: var(--chassis);
+  font-size: var(--text-s);
+  font-weight: 800;
+}

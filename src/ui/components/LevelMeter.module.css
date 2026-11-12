@@ -1,0 +1,118 @@
+/*
+ * A recessed slot like the faders' (same well, same hairline, round ends), with
+ * an LED ladder inside. Unlit segments stay faintly visible so the scale is
+ * there even in silence; lit ones take the deck's colour, or ink outside a deck.
+ */
+.meter {
+  --thickness: var(--space-4);
+  --inset: 3px;
+  --segment: 6px;
+  --segment-gap: 2px;
+  --mark: 2px;
+  position: relative;
+  flex: none;
+  padding: var(--inset);
+  border: 1px solid var(--hairline);
+  border-radius: calc(var(--thickness) / 2);
+  background: var(--well);
+  color: var(--deck, var(--ink));
+}
+
+.meter[data-orientation='vertical'] {
+  width: var(--thickness);
+  height: 100%;
+  min-height: calc(var(--space-7) * 2);
+}
+
+.meter[data-orientation='horizontal'] {
+  width: 100%;
+  min-width: calc(var(--space-7) * 2);
+  height: var(--thickness);
+}
+
+/* Everything that lights up, clipped to the inside of the slot. */
+.window {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.ladder {
+  position: absolute;
+  inset: 0;
+  background: var(--hairline);
+  /* Cuts the bar into segments, counted from the quiet end. */
+  -webkit-mask: repeating-linear-gradient(
+    var(--ladder-direction),
+    var(--ink) 0 var(--segment),
+    transparent var(--segment) calc(var(--segment) + var(--segment-gap))
+  );
+  mask: repeating-linear-gradient(
+    var(--ladder-direction),
+    var(--ink) 0 var(--segment),
+    transparent var(--segment) calc(var(--segment) + var(--segment-gap))
+  );
+}
+
+.meter[data-orientation='vertical'] .ladder {
+  --ladder-direction: to top;
+}
+
+.meter[data-orientation='horizontal'] .ladder {
+  --ladder-direction: to right;
+}
+
+/* The lit part. Scaled from the quiet end by the drawing loop; starts empty. */
+.fill {
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  will-change: transform;
+}
+
+.meter[data-orientation='vertical'] .fill {
+  transform: scaleY(0);
+  transform-origin: bottom;
+}
+
+.meter[data-orientation='horizontal'] .fill {
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+/*
+ * The peak-hold mark rides on a layer the size of the window, so moving the
+ * layer by a percentage moves the mark by that share of the slot. At silence
+ * the layer sits just outside the window and the mark is clipped away.
+ */
+.peak {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+}
+
+.peak::before {
+  content: '';
+  position: absolute;
+  background: var(--ink);
+}
+
+.meter[data-orientation='vertical'] .peak {
+  transform: translateY(100%);
+}
+
+.meter[data-orientation='vertical'] .peak::before {
+  inset: 0 0 auto;
+  height: var(--mark);
+}
+
+.meter[data-orientation='horizontal'] .peak {
+  transform: translateX(-100%);
+}
+
+.meter[data-orientation='horizontal'] .peak::before {
+  inset: 0 0 0 auto;
+  width: var(--mark);
+}

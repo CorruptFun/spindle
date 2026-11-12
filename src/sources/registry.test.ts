@@ -23,9 +23,11 @@ describe('source registry', () => {
     }
   });
 
-  it('gives files the listener owns the full deck', () => {
-    expect(SOURCES.local.audioPath).toBe('pcm');
-    expect(SOURCES.local.capabilities).toEqual(FULL_CAPABILITIES);
+  it('gives audio we own the full deck', () => {
+    for (const id of ['crate', 'local'] as const) {
+      expect(SOURCES[id].audioPath).toBe('pcm');
+      expect(SOURCES[id].capabilities).toEqual(FULL_CAPABILITIES);
+    }
   });
 
   it('never lets a protected stream be mixed, altered, analysed or recorded', () => {

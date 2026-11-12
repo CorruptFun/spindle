@@ -57,8 +57,15 @@
   --dur-fast: 90ms;
   --dur: 180ms;
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* One slow breath for work with no measurable progress (loading). Never faster. */
+  --dur-pulse: 1.4s;
 
   /* Smallest thing a finger should have to hit; Play mode uses the larger one. */
   --touch-min: 48px;
   --touch-play: 72px;
+
+  /* Fader parts, shared so every fader and meter reads as one family. The cap is
+     `--fader-cap` long along the slot and `--touch-min` across it. */
+  --fader-cap: 30px;
+  --fader-slot: 10px;
 }

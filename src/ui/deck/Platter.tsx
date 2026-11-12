@@ -1,14 +1,9 @@
 import { useCallback, useEffect, useRef } from 'react';
 import type { PointerEvent } from 'react';
 import type { DeckId } from '@/engine/core/types';
-import {
-  isAtRest,
-  MAX_VELOCITY_DEG,
-  shortestArcDeg,
-  stepPlatter,
-  type PlatterMotion,
-} from '@/engine/deck/platter';
-import { clamp, lerp } from '@/lib/audio-math';
+import { MAX_VELOCITY_DEG, shortestArcDeg, wrapDeg } from '@/engine/deck/platter';
+import type { PlatterControl } from '@/engine/deck/types';
+import { clamp } from '@/lib/audio-math';
 import styles from './Platter.module.css';
 
 /** Radii of the visible groove rings, in a 200-unit viewBox. The gaps read as track breaks. */
@@ -17,128 +12,195 @@ const GROOVES = [40, 43.5, 47, 50.5, 54, 60, 63.5, 67, 70.5, 74, 80, 83.5, 87];
 /** A hand that has not moved for this long is holding the record still, not throwing it. */
 const HOLD_STILL_MS = 80;
 
+/** How quickly the measured hand speed follows the hand. Long enough to smooth out jittery touch events. */
+const HAND_SMOOTHING_MS = 30;
+
+/**
+ * Near the spindle a tiny movement is a huge change of angle. Inside this share
+ * of the radius the hand does not turn the record, so passing over the middle
+ * cannot whip it round.
+ */
+const DEAD_CENTRE = 0.12;
+
 interface Hold {
-  pointerId: number;
+  readonly pointerId: number;
+  /** The deck that was grabbed, so the same one is released even if the prop changes. */
+  readonly control: PlatterControl;
+  readonly centreX: number;
+  readonly centreY: number;
+  readonly radius: number;
   pointerDeg: number;
-  timeMs: number;
+  lastMoveMs: number;
+  /** Turn not yet counted in the speed, from events that arrived with the same timestamp. */
+  pendingDeg: number;
+  velocityDeg: number;
 }
 
 interface PlatterProps {
   deck: DeckId;
-  /** Whether the motor is running. */
+  /** The deck that owns the record's motion. null until the engine is ready: draw a still record. */
+  control: PlatterControl | null;
+  /** Motor on. When this changes, wake the drawing loop. */
   playing: boolean;
 }
 
 /**
- * A record you can grab. The motor turns it at 33⅓ rpm; a finger overrides the
- * motor, and on release the record is thrown, coasts, or is pulled back up to
- * speed. The rotation is written straight to the element every frame and never
- * touches React state.
+ * A record you can grab. The deck owns the motion: this component only shows
+ * the angle the deck reports and passes the hand's movement to it. The angle is
+ * written straight to the element every frame and never touches React state;
+ * the loop sleeps whenever the record is still and nobody is holding it.
  */
-export function Platter({ deck, playing }: PlatterProps) {
+export function Platter({ deck, control, playing }: PlatterProps) {
   const discRef = useRef<HTMLDivElement>(null);
-  const motion = useRef<PlatterMotion>({ angleDeg: 0, velocityDeg: 0 });
+  const controlRef = useRef(control);
   const hold = useRef<Hold | null>(null);
-  const motorOn = useRef(false);
+  const reducedMotion = useRef(false);
   const frame = useRef(0);
+  /** The angle on screen, and how far it is from the deck's (only ever non-zero with reduced motion). */
+  const shownDeg = useRef(0);
+  const offsetDeg = useRef(0);
 
-  /** Start the frame loop if it is not running. It stops itself once the record is at rest. */
-  const run = useCallback(() => {
+  const paint = useCallback(() => {
+    const deckControl = controlRef.current;
+    if (!deckControl || !discRef.current) return;
+    shownDeg.current = deckControl.angleDeg() + offsetDeg.current;
+    discRef.current.style.transform = `rotate(${wrapDeg(shownDeg.current).toFixed(2)}deg)`;
+  }, []);
+
+  /** Start the frame loop if it is not running. It stops itself once there is nothing to show. */
+  const wake = useCallback(() => {
     if (frame.current !== 0) return;
-    let last = performance.now();
 
-    const tick = (now: number) => {
-      const dtSec = Math.min((now - last) / 1000, 0.05);
-      last = now;
-
-      if (!hold.current) {
-        motion.current = stepPlatter(motion.current, motorOn.current, dtSec);
-      }
-      if (discRef.current) {
-        discRef.current.style.transform = `rotate(${motion.current.angleDeg.toFixed(2)}deg)`;
-      }
-
-      const resting = !hold.current && isAtRest(motion.current, motorOn.current);
-      frame.current = resting ? 0 : requestAnimationFrame(tick);
+    const tick = () => {
+      const deckControl = controlRef.current;
+      const held = hold.current !== null;
+      // With reduced motion the record only moves under a finger, never by itself.
+      const follow = held || !reducedMotion.current;
+      if (follow) paint();
+      const keepGoing = deckControl !== null && (held || (follow && deckControl.isMoving()));
+      frame.current = keepGoing ? requestAnimationFrame(tick) : 0;
     };
 
     frame.current = requestAnimationFrame(tick);
-  }, []);
+  }, [paint]);
+
+  // A new deck (or the first one): show where its record is, then follow it.
+  useEffect(() => {
+    controlRef.current = control;
+    paint();
+    wake();
+  }, [control, paint, wake]);
 
   useEffect(() => {
-    // With reduced motion the record still follows a finger, but does not spin by itself.
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    motorOn.current = playing && !reducedMotion;
-    run();
-  }, [playing, run]);
+    wake();
+  }, [playing, wake]);
+
+  useEffect(() => {
+    const query = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const update = () => {
+      reducedMotion.current = query.matches;
+      wake();
+    };
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, [wake]);
 
   useEffect(
     () => () => {
       cancelAnimationFrame(frame.current);
       frame.current = 0;
+      // Never leave a deck held by a hand that is gone.
+      hold.current?.control.release(0);
+      hold.current = null;
     },
     [],
   );
 
-  const pointerDeg = (event: PointerEvent<HTMLDivElement>) => {
-    const box = event.currentTarget.getBoundingClientRect();
-    const x = event.clientX - (box.left + box.width / 2);
-    const y = event.clientY - (box.top + box.height / 2);
-    return (Math.atan2(y, x) * 180) / Math.PI;
-  };
-
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    if (hold.current) return; // one hand per record
+    if (!control || hold.current) return; // one hand per record
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
     event.currentTarget.setPointerCapture(event.pointerId);
+
+    // The record does not move while held, so its centre is measured once per grab.
+    const box = event.currentTarget.getBoundingClientRect();
+    const centreX = box.left + box.width / 2;
+    const centreY = box.top + box.height / 2;
     hold.current = {
       pointerId: event.pointerId,
-      pointerDeg: pointerDeg(event),
-      timeMs: event.timeStamp,
+      control,
+      centreX,
+      centreY,
+      radius: box.width / 2,
+      pointerDeg: angleOf(event.clientX - centreX, event.clientY - centreY),
+      lastMoveMs: event.timeStamp,
+      pendingDeg: 0,
+      velocityDeg: 0,
     };
-    motion.current = { angleDeg: motion.current.angleDeg, velocityDeg: 0 };
-    run();
+
+    // Keep the picture where it is: with reduced motion the deck may have moved on unseen.
+    offsetDeg.current = shownDeg.current - control.angleDeg();
+    control.grab();
+    wake();
   };
 
   const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
     const held = hold.current;
     if (!held || held.pointerId !== event.pointerId) return;
 
-    const deg = pointerDeg(event);
+    const dx = event.clientX - held.centreX;
+    const dy = event.clientY - held.centreY;
+    const deg = angleOf(dx, dy);
     const turned = shortestArcDeg(held.pointerDeg, deg);
-    const dtSec = (event.timeStamp - held.timeMs) / 1000;
-    const handVelocity = dtSec > 0 ? turned / dtSec : motion.current.velocityDeg;
+    held.pointerDeg = deg;
+    if (Math.hypot(dx, dy) < held.radius * DEAD_CENTRE) return;
 
-    motion.current = {
-      angleDeg: motion.current.angleDeg + turned,
-      velocityDeg: clamp(
-        lerp(motion.current.velocityDeg, handVelocity, 0.5),
-        -MAX_VELOCITY_DEG,
-        MAX_VELOCITY_DEG,
-      ),
-    };
-    hold.current = { pointerId: held.pointerId, pointerDeg: deg, timeMs: event.timeStamp };
+    // Screen y points down, so a growing angle is clockwise, which is what the deck expects.
+    held.control.dragBy(turned);
+
+    held.pendingDeg += turned;
+    const dtMs = event.timeStamp - held.lastMoveMs;
+    if (dtMs > 0) {
+      const handVelocity = (held.pendingDeg / dtMs) * 1000;
+      const blend = 1 - Math.exp(-dtMs / HAND_SMOOTHING_MS);
+      held.velocityDeg += (handVelocity - held.velocityDeg) * blend;
+      held.pendingDeg = 0;
+      held.lastMoveMs = event.timeStamp;
+    }
   };
 
-  const onPointerEnd = (event: PointerEvent<HTMLDivElement>) => {
+  /** The hand lifts: throw the record at the hand's speed, unless it had stopped. */
+  const onPointerUp = (event: PointerEvent<HTMLDivElement>) => {
     const held = hold.current;
     if (!held || held.pointerId !== event.pointerId) return;
+    const still = event.timeStamp - held.lastMoveMs > HOLD_STILL_MS;
+    letGo(still ? 0 : clamp(held.velocityDeg, -MAX_VELOCITY_DEG, MAX_VELOCITY_DEG));
+  };
 
-    if (event.timeStamp - held.timeMs > HOLD_STILL_MS) {
-      motion.current = { angleDeg: motion.current.angleDeg, velocityDeg: 0 };
-    }
+  /** The browser took the pointer away (a system gesture, a lost capture): put the record down gently. */
+  const onPointerCancel = (event: PointerEvent<HTMLDivElement>) => {
+    if (hold.current?.pointerId === event.pointerId) letGo(0);
+  };
+
+  const letGo = (throwVelocityDeg: number) => {
+    const held = hold.current;
+    if (!held) return;
     hold.current = null;
-    run();
+    held.control.release(throwVelocityDeg);
+    wake();
   };
 
   return (
     <div
       className={styles.platter}
+      data-ready={control !== null}
       role="img"
-      aria-label={`Deck ${deck} record. Drag to spin it.`}
+      aria-label={control ? `Deck ${deck} record. Drag to spin it.` : `Deck ${deck} record`}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
-      onPointerUp={onPointerEnd}
-      onPointerCancel={onPointerEnd}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerCancel}
+      onLostPointerCapture={onPointerCancel}
     >
       <div className={styles.disc} ref={discRef}>
         <svg viewBox="0 0 200 200" aria-hidden="true">
@@ -161,4 +223,9 @@ export function Platter({ deck, playing }: PlatterProps) {
       <div className={styles.sheen} />
     </div>
   );
+}
+
+/** Angle of a point around the centre, in degrees, clockwise on screen. */
+function angleOf(dx: number, dy: number): number {
+  return (Math.atan2(dy, dx) * 180) / Math.PI;
 }

@@ -1,8 +1,7 @@
 name: CI
 
+# Pull requests are checked here. Pushes to main are checked by the Deploy workflow.
 on:
-  push:
-    branches: [main]
   pull_request:
 
 concurrency:
@@ -22,8 +21,4 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - run: npm run typecheck
-      - run: npm run lint
-      - run: npm run format:check
-      - run: npm test
-      - run: npm run build
+      - run: npm run check

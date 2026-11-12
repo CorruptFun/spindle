@@ -17,12 +17,15 @@ export interface PlatterMotion {
   readonly velocityDeg: number;
 }
 
-/** How hard the motor pulls the record to speed, and how gently a free record coasts down (1/s). */
-const MOTOR_RESPONSE = 9;
-const COAST_RESPONSE = 2.2;
+/**
+ * How hard the motor pulls the record to speed, and how gently a free record
+ * coasts down (1/s). Exported so the audio-thread playhead uses the very same feel.
+ */
+export const MOTOR_RESPONSE = 9;
+export const COAST_RESPONSE = 2.2;
 
 /** Below this speed, with the motor off, the record counts as stopped. */
-const REST_VELOCITY_DEG = 0.5;
+export const REST_VELOCITY_DEG = 0.5;
 
 /**
  * Advance a free-running record (nobody touching it) by `dtSec`.

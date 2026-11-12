@@ -11,7 +11,7 @@ the same abilities are reachable at three skill levels. This is the checklist th
 | Capability                  | Play | Mix | Pro | Milestone | Notes                                                 |
 | --------------------------- | :--: | :-: | :-: | :-------: | ----------------------------------------------------- |
 | Play, pause, cue            |  ●   |  ●  |  ●  |    M1     |                                                       |
-| Platter: scratch, spin-back |  ●   |  ●  |  ●  |    M2     | Needs low touch-to-sound latency                      |
+| Platter: scratch, spin-back |  ●   |  ●  |  ●  |    M1     | Needs low touch-to-sound latency                      |
 | Nudge / pitch bend          |  –   |  ●  |  ●  |    M2     |                                                       |
 | Tempo fader                 |  –   |  ●  |  ●  |    M2     | Pro adds range choices                                |
 | Waveforms                   |  ◐   |  ●  |  ●  |    M2     | Play: progress ring. Pro: stacked, frequency-coloured |
@@ -51,7 +51,7 @@ the same abilities are reachable at three skill levels. This is the checklist th
 
 | Capability                               | Play | Mix | Pro | Milestone | Notes                                         |
 | ---------------------------------------- | :--: | :-: | :-: | :-------: | --------------------------------------------- |
-| Starter crate (works with nothing added) |  ●   |  ●  |  ●  |    M1     |                                               |
+| Starter songs (works with nothing added) |  ●   |  ●  |  ●  |    M1     |                                               |
 | Your own files                           |  ●   |  ●  |  ●  |    M1     | MP3, M4A/AAC, WAV, FLAC, OGG                  |
 | BPM, key, beat grid, waveform analysis   |  ◐   |  ●  |  ●  |    M3     | Play uses it silently                         |
 | Library, crates, search                  |  ◐   |  ●  |  ●  |    M3     | Play: picture grid                            |

@@ -41,6 +41,7 @@ src/
   config/       Brand, skill-mode definitions, feature flags. Plain data.
   lib/          Pure helpers (audio maths). Imports nothing else from src/.
   engine/       The audio engine. Plain TypeScript on the Web Audio API.
+    AudioEngine.ts  Builds the context, four decks and the mixer, and connects them.
     core/         Audio context, master bus, clock, shared types (capabilities).
     deck/         One loaded track and its playhead.
     mixer/        Faders, crossfader, EQ, filter, cue bus, master.
@@ -51,6 +52,7 @@ src/
     worklets/     Code that runs on the audio thread.
   analysis/     Web Workers: waveform peaks, BPM, beat grid, key.
   sources/      Where music comes from. One folder per source, one contract.
+    crate/        Starter songs, synthesised in code. Full decks.
     local/        Files the listener owns. Full decks.
     apple-music/  Listen-only jukebox.
     spotify/      Listen-only jukebox.
@@ -68,7 +70,7 @@ src/
     layouts/      The three skill-mode layouts and the app shell.
 services/
   apple-music-token/   Tiny server-side function that signs Apple Music developer tokens.
-public/         Icons, and the starter crate of bundled audio.
+public/         Icons.
 tests/e2e/      End-to-end tests. Unit tests sit next to the code as *.test.ts.
 docs/           Plan, features, design language, architecture, streaming.
 ```
@@ -93,7 +95,7 @@ A deck does not assume it can do everything. Each source declares a `DeckCapabil
 (`src/engine/core/types.ts`): can it change tempo, scratch, pass through EQ, show a waveform,
 be recorded, sound at the same time as something else?
 
-- Files the listener owns get `FULL_CAPABILITIES`.
+- Files the listener owns, and the built-in starter songs, get `FULL_CAPABILITIES`.
 - Apple Music and Spotify get `LISTEN_ONLY_CAPABILITIES`.
 
 The UI and controllers read capabilities and hide what is unavailable. No component checks
@@ -161,8 +163,11 @@ for those devices regardless of which browser is installed.
 
 - **Unit (Vitest):** all maths and rules that can be tested without sound: gain curves,
   crossfader laws, tempo and grid arithmetic, capability invariants.
-- **Engine (Vitest + OfflineAudioContext, from M1):** render a known signal through the graph
-  and assert on the output samples.
+- **Audio maths (Vitest):** the playback kernel renders into plain arrays, so play, scratch,
+  reverse, loop, seek and end-of-track are asserted sample by sample without a browser.
+- **Wired graph (in a browser):** render a known signal through a real deck and mixer on an
+  OfflineAudioContext and measure the output. Commands only reach an audio worklet while an
+  offline render is suspended, so each one is issued at a `suspend()` point.
 - **End-to-end (Playwright, from M8):** install, load, play, mix, go offline.
 - **Ears and hands:** every milestone has a "done when" in [PLAN.md](PLAN.md) that is checked
   by a person on a real device.

@@ -48,22 +48,32 @@ The design language is written down and the first real controls are built to it:
 can be grabbed, spun and thrown (with a tested motor-and-inertia model), a play button, and a
 crossfader that fades each deck's colour. They move but are silent until M1.
 
-### M1 · First mix
+### M1 · First mix — built, waiting on ears and real devices
 
-- Engine core: audio context lifecycle (unlocked on first touch), master bus, limiter.
-- Local files: file picker and drag-and-drop, decode, load to a deck.
-- A bundled starter crate so the app makes sound before anyone adds a file.
-- Two decks: play, pause, cue. Channel faders, crossfader, level meters.
-- Play mode, first real version, wired to the controls that already exist. The rest of the
-  control kit (channel fader, meter) is built to [DESIGN.md](DESIGN.md).
+- Engine: audio context lifecycle (switched on by the first touch), four decks into a mixer
+  with channel faders, crossfader, limiter and real level meters.
+- Deck playback runs on the audio thread and follows the record: play, pause, back to start,
+  grab, scratch (backwards too), throw. Pulled forward from M2, because a record that moves
+  while the sound ignores it would be a control that does nothing.
+- Your own files: file picker and drag-and-drop onto a deck, decoded on the device.
+- Four starter songs, written as code and synthesised by the app, so it makes sound before
+  anyone adds a file and there is nothing to license. Same tempo and key family, so any two
+  blend.
+- Song picker, track display with time left, channel strips in Mix and Pro, all built to
+  [DESIGN.md](DESIGN.md).
 
 **Done when** a child who has never seen the app can start two records and slide between them
 on a tablet without being told how.
 
+Everything above is built and measured: unit tests, a real browser audio graph, and the live
+app. What no test can say is whether the starter songs sound good, how the scratch feels under
+a finger, and whether it all holds up on an iPhone, an iPad and an Android phone. That is the
+remaining work for this milestone.
+
 ### M2 · Platters and waveforms
 
-- Deck playback moves into an audio worklet: variable speed, reverse, scratch, nudge, brake.
-- Touch platter with weight and inertia; tempo fader.
+- Tempo fader, nudge and brake on top of the M1 playhead.
+- Scratch feel tuned on real devices, with touch-to-sound latency measured and shown.
 - Waveform peaks computed in a worker; overview and scrolling waveforms on canvas.
 
 **Done when** scratching feels attached to the finger (round-trip latency measured and shown)
@@ -141,14 +151,14 @@ owns, which includes anything bought from the iTunes Store. The detail and the s
 
 ## Decisions needed from the owner
 
-| #   | Decision                                                                                                                                  | Needed by | Default if nobody decides                 |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------- | --------- | ----------------------------------------- |
-| 1   | **Name.** "Spindle" is a working title, set in one file (`src/config/brand.ts`).                                                          | M8        | Keep Spindle                              |
-| 2   | **Is a listen-only jukebox worth building?** It needs an Apple Developer Program membership (paid, yearly) and a Spotify Premium account. | M7        | Run the spike, then decide                |
-| 3   | **Starter crate.** Which royalty-free tracks and sounds ship inside the app (see `public/crate/README.md`).                               | M1        | A few CC0 loops and one-shots             |
-| 4   | **Test devices.** Which phones and tablets the family actually uses; M1 and M2 are tuned on these.                                        | M1        | iPad, iPhone, one Android phone, a laptop |
-| 5   | **Hosting.** GitHub Pages is enough for the app. The Apple Music token service needs somewhere to run (a Cloudflare Worker is planned).   | M7 / M8   | GitHub Pages + one Worker                 |
-| 6   | **Repository visibility and licence.**                                                                                                    | M8        | Private until M8                          |
+| #   | Decision                                                                                                                                                                    | Needed by | Default if nobody decides                 |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ----------------------------------------- |
+| 1   | **Name.** "Spindle" is a working title, set in one file (`src/config/brand.ts`).                                                                                            | M8        | Keep Spindle                              |
+| 2   | **Is a listen-only jukebox worth building?** It needs an Apple Developer Program membership (paid, yearly) and a Spotify Premium account.                                   | M7        | Run the spike, then decide                |
+| 3   | **Starter songs.** Four built-in songs are generated by the app, so nothing is licensed or downloaded. Do they sound good enough, or should real recordings be added later? | After M1  | Keep the generated songs                  |
+| 4   | **Test devices.** Which phones and tablets the family actually uses; M1 and M2 are tuned on these.                                                                          | M1        | iPad, iPhone, one Android phone, a laptop |
+| 5   | **Hosting.** The app is on GitHub Pages. The Apple Music token service needs somewhere to run (a Cloudflare Worker is planned).                                             | M7 / M8   | GitHub Pages + one Worker                 |
+| 6   | **Repository visibility and licence.**                                                                                                                                      | M8        | Private until M8                          |
 
 ## Risks
 

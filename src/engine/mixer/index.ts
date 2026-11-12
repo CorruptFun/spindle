@@ -6,3 +6,7 @@
  * Milestone 6: cue bus and headphone output.
  */
 export * from './crossfader';
+export * from './levels';
+export * from './Mixer';
+export * from './mix-law';
+export * from './types';

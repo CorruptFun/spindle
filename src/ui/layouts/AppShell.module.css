@@ -54,11 +54,3 @@
   color: var(--ink-dim);
   font-size: var(--text-s);
 }
-
-.footer {
-  padding: var(--space-3) var(--space-4);
-  border-top: 1px solid var(--hairline);
-  color: var(--ink-dim);
-  font-size: var(--text-s);
-  text-align: center;
-}

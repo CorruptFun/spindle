@@ -5,6 +5,7 @@
  * library, or any UI/app code. The engine can be driven from a test, a MIDI
  * controller or a different UI without changes.
  */
+export * from './AudioEngine';
 export * from './core';
 export * from './deck';
 export * from './mixer';

@@ -13,6 +13,11 @@
   cursor: grabbing;
 }
 
+/* Until the deck is ready the record is a picture: nothing to grab yet. */
+.platter[data-ready='false'] {
+  cursor: default;
+}
+
 /* The deck's colour, as a ring. It dims as the crossfader moves away from this deck. */
 .platter::before {
   content: '';

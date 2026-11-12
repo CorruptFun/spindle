@@ -1,0 +1,145 @@
+/*
+ * The deck's display window. Loaded, it is recessed like the fader slots and
+ * shows what is on the deck. Empty, it is an open slot with a dashed edge: the
+ * same "put something here" edge as a file being dropped on the deck. Every
+ * state has the same height, so nothing below it moves when a song arrives.
+ */
+.strip {
+  --line: 2px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  gap: var(--space-2);
+  min-width: 0;
+  min-height: var(--touch-min);
+  padding: 0 var(--space-3) 0 var(--space-2);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-control);
+  background: var(--well);
+  text-align: start;
+  cursor: pointer;
+  transition:
+    background-color var(--dur) var(--ease-out),
+    border-color var(--dur) var(--ease-out);
+}
+
+.strip:hover {
+  border-color: var(--ink-faint);
+}
+
+.strip:active {
+  background: var(--panel-raised);
+}
+
+.strip[data-state='empty'] {
+  border-style: dashed;
+  border-color: var(--ink-faint);
+  background: transparent;
+}
+
+.strip[data-state='empty']:hover {
+  border-color: var(--ink-dim);
+  background: var(--panel-raised);
+}
+
+.badge {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--space-5);
+  height: var(--space-5);
+  border-radius: var(--radius-cap);
+  background: var(--deck);
+  color: var(--chassis);
+  font-size: var(--text-s);
+  font-weight: 800;
+}
+
+/* The track's glyph, or the add mark when the deck is empty. */
+.shape {
+  flex: none;
+  width: var(--space-5);
+  height: var(--space-5);
+  /* A little smaller than the badge, so the letter stays the stronger mark. */
+  padding: calc(var(--space-1) / 2);
+  color: var(--deck);
+}
+
+.word {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: var(--text-s);
+  font-weight: 650;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.strip[data-state='loading'] .word {
+  color: var(--ink-dim);
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: var(--text-s);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.time {
+  flex: none;
+  color: var(--ink-dim);
+  font-size: var(--text-s);
+  font-variant-numeric: tabular-nums;
+}
+
+/* A thin rule along the foot of the window: how far through the track the needle is. */
+.line {
+  position: absolute;
+  right: var(--space-3);
+  bottom: var(--space-1);
+  left: var(--space-3);
+  height: var(--line);
+  overflow: hidden;
+  border-radius: calc(var(--line) / 2);
+  background: var(--hairline);
+}
+
+.progress {
+  position: absolute;
+  inset: 0;
+  background: var(--deck);
+  transform: scaleX(0);
+  transform-origin: left;
+  will-change: transform;
+}
+
+/* Loading has no honest percentage, so the line breathes instead of pretending to fill. */
+.working {
+  position: absolute;
+  inset: 0;
+  background: var(--deck);
+  animation: breathe var(--dur-pulse) ease-in-out infinite alternate;
+}
+
+@keyframes breathe {
+  from {
+    opacity: 0.15;
+  }
+
+  to {
+    opacity: 0.6;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .working {
+    animation: none;
+    opacity: 0.4;
+  }
+}

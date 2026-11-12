@@ -1,0 +1,11 @@
+/* Fills its parent; the parent decides the size and the colour. */
+.glyph {
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  overflow: visible;
+}

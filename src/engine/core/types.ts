@@ -5,6 +5,25 @@ export const DECK_IDS: readonly DeckId[] = ['A', 'B', 'C', 'D'];
 export type TransportState = 'empty' | 'loading' | 'ready' | 'playing' | 'paused' | 'error';
 
 /**
+ * Decoded audio that the engine owns outright. Whoever hands one to a deck
+ * gives up the sample arrays: they are moved to the audio thread, not copied.
+ */
+export interface PcmAudio {
+  /** Must equal the audio context's sample rate; decode and render at that rate. */
+  readonly sampleRate: number;
+  /** One channel (mono) or two (left, right), all the same length. */
+  readonly channels: readonly Float32Array[];
+}
+
+export function pcmFrames(audio: PcmAudio): number {
+  return audio.channels[0]?.length ?? 0;
+}
+
+export function pcmDurationSec(audio: PcmAudio): number {
+  return pcmFrames(audio) / audio.sampleRate;
+}
+
+/**
  * What can be done with the track that is loaded on a deck.
  *
  * Capabilities come from where the audio came from, not from the deck: a file

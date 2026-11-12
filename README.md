@@ -4,9 +4,13 @@ A turntable DJ app for every age. It installs from the browser, works offline, a
 skill levels on one audio engine: **Play** for small kids, **Mix** for learners, **Pro** for
 the full booth.
 
-> "Spindle" is a working title. Status: **foundation** — the project structure, tooling,
-> design language and installable app are in place. The records spin and the crossfader slides;
-> sound arrives in Milestone 1.
+**Try it: <https://corruptfun.github.io/spindle/>** On a phone or tablet, open the link and
+choose _Add to Home Screen_ (iPhone, iPad) or _Install app_ (Android, desktop) to keep it as an
+app that works offline.
+
+> "Spindle" is a working title. Status: **Milestone 1 of 8** — two decks (four in Pro) that
+> play, scratch and mix, four built-in starter songs, and your own music files. Waveforms,
+> tempo sync, effects and the rest are listed in [docs/PLAN.md](docs/PLAN.md).
 
 ## Run it
 
@@ -27,11 +31,13 @@ npm run dev
 | `npm run check`   | Everything CI runs: types, lint, format, tests, build |
 | `npm run icons`   | Regenerate app icons from `public/logo.svg`           |
 
+Pushing to `main` checks, builds and publishes the app to GitHub Pages.
+
 ## Where things are
 
 ```
 src/engine      the audio engine (no UI code allowed)
-src/sources     where music comes from: your files, Apple Music, Spotify
+src/sources     where music comes from: starter songs, your files, Apple Music, Spotify
 src/analysis    waveform, BPM and key detection (workers)
 src/library     the collection stored on the device
 src/controllers MIDI and keyboard input

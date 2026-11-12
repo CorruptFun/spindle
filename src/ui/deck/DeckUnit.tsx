@@ -1,37 +1,133 @@
+import { useCallback, useRef, useState } from 'react';
+import type { DragEvent } from 'react';
 import type { DeckId } from '@/engine/core/types';
-import { crossfaderGains, defaultCrossfaderSide } from '@/engine/mixer/crossfader';
-import { useBooth } from '@/state/booth';
+import type { DeckControl } from '@/engine/deck/types';
+import type { TrackMeta } from '@/sources/types';
+import { Mark } from '@/ui/components/TrackGlyph';
 import { TransportButton } from '@/ui/components/TransportButton';
 import { deckStyle } from '@/ui/theme/deck-colors';
 import styles from './DeckUnit.module.css';
 import { Platter } from './Platter';
+import { TrackStrip } from './TrackStrip';
 
-/** One deck: what is loaded, the record, and its transport. */
-export function DeckUnit({ deck }: { deck: DeckId }) {
-  const playing = useBooth((state) => state.playing[deck]);
-  const togglePlay = useBooth((state) => state.togglePlay);
-  // How present this deck is in the mix, for dimming its colour. Both decks are at full
-  // colour with the crossfader centred (where each gain is 1/√2) and fade only beyond it.
-  const presence = useBooth((state) =>
-    Math.min(1, crossfaderGains(state.crossfader)[defaultCrossfaderSide(deck)] * Math.SQRT2),
-  );
+interface DeckUnitProps {
+  deck: DeckId;
+  control: DeckControl | null;
+  track: TrackMeta | null;
+  loading: boolean;
+  playing: boolean;
+  /** 0..1, how present this deck is in the mix (dims its colour). */
+  presence: number;
+  onTogglePlay: () => void;
+  /** Return the needle to the start. Leave it out when that is not possible: the button is then not shown. */
+  onBackToStart?: () => void;
+  onChooseTrack: () => void;
+  /** Something was dropped on the deck (the integrator filters for audio files). */
+  onDropData?: (data: DataTransfer) => void;
+}
+
+function carriesFiles(event: DragEvent): boolean {
+  return Array.from(event.dataTransfer.types).includes('Files');
+}
+
+/** One deck: what is on it, the record, and its transport. Presentational: props in, callbacks out. */
+export function DeckUnit({
+  deck,
+  control,
+  track,
+  loading,
+  playing,
+  presence,
+  onTogglePlay,
+  onBackToStart,
+  onChooseTrack,
+  onDropData,
+}: DeckUnitProps) {
+  const [dragOver, setDragOver] = useState(false);
+  // dragenter and dragleave fire for every child crossed, so count them.
+  const dragDepth = useRef(0);
+
+  const hasTrack = track !== null && !loading && control !== null;
+  const readPositionSec = useCallback(() => control?.positionSec() ?? 0, [control]);
+  const isMoving = useCallback(() => control?.isMoving() ?? false, [control]);
+  // Read at render: it only changes when a track is loaded, which re-renders the deck anyway.
+  const durationSec = (hasTrack && control.durationSec()) || track?.durationSec || 0;
+
+  const dropHandlers = onDropData
+    ? {
+        onDragEnter: (event: DragEvent) => {
+          if (!carriesFiles(event)) return;
+          event.preventDefault();
+          dragDepth.current += 1;
+          setDragOver(true);
+        },
+        onDragOver: (event: DragEvent) => {
+          if (!carriesFiles(event)) return;
+          event.preventDefault();
+          event.dataTransfer.dropEffect = 'copy';
+        },
+        onDragLeave: (event: DragEvent) => {
+          if (!carriesFiles(event)) return;
+          dragDepth.current = Math.max(0, dragDepth.current - 1);
+          if (dragDepth.current === 0) setDragOver(false);
+        },
+        onDrop: (event: DragEvent) => {
+          if (!carriesFiles(event)) return;
+          event.preventDefault();
+          dragDepth.current = 0;
+          setDragOver(false);
+          onDropData(event.dataTransfer);
+        },
+      }
+    : {};
 
   return (
-    <section className={styles.unit} aria-label={`Deck ${deck}`} style={deckStyle(deck, presence)}>
-      <header className={styles.strip}>
-        <span className={styles.badge}>{deck}</span>
-        <span className={styles.track}>No track loaded</span>
-      </header>
+    <section
+      className={styles.unit}
+      aria-label={`Deck ${deck}`}
+      style={deckStyle(deck, presence)}
+      data-drop={dragOver}
+      {...dropHandlers}
+    >
+      <TrackStrip
+        deck={deck}
+        track={track}
+        loading={loading}
+        readPositionSec={hasTrack ? readPositionSec : null}
+        durationSec={durationSec}
+        playing={playing}
+        isMoving={hasTrack ? isMoving : null}
+        onChoose={onChooseTrack}
+      />
 
       <div className={styles.platter}>
-        <Platter deck={deck} playing={playing} />
+        <Platter deck={deck} control={control} playing={playing} />
       </div>
 
-      <TransportButton
-        playing={playing}
-        target={`deck ${deck}`}
-        onToggle={() => togglePlay(deck)}
-      />
+      <div className={styles.transport}>
+        {onBackToStart && (
+          <button
+            type="button"
+            className={styles.backToStart}
+            aria-label={`Back to the start of deck ${deck}`}
+            onClick={onBackToStart}
+          >
+            <span className={styles.backMark} aria-hidden="true">
+              <Mark name="start" />
+            </span>
+          </button>
+        )}
+        <TransportButton playing={playing} target={`deck ${deck}`} onToggle={onTogglePlay} />
+      </div>
+
+      {dragOver && (
+        <div className={styles.dropTarget} aria-hidden="true">
+          <span className={styles.dropMark}>
+            <Mark name="drop" />
+          </span>
+          <span className={styles.dropWord}>Drop</span>
+        </div>
+      )}
     </section>
   );
 }
