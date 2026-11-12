@@ -1,0 +1,33 @@
+/* A segmented switch: a recessed slot with a light cap on the chosen position. */
+.switcher {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-control);
+  background: var(--well);
+}
+
+.option {
+  min-width: 68px;
+  min-height: calc(var(--touch-min) - 8px);
+  padding: 0 var(--space-4);
+  border: 0;
+  border-radius: calc(var(--radius-control) - 3px);
+  background: transparent;
+  color: var(--ink-dim);
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    background-color var(--dur) var(--ease-out),
+    color var(--dur) var(--ease-out);
+}
+
+.option:hover {
+  color: var(--ink);
+}
+
+.option[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--chassis);
+}

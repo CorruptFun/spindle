@@ -1,0 +1,33 @@
+.button {
+  display: grid;
+  place-items: center;
+  width: var(--transport-size, var(--touch-play));
+  height: var(--transport-size, var(--touch-play));
+  padding: 0;
+  border: 1px solid var(--hairline);
+  border-radius: 50%;
+  background: var(--panel-raised);
+  color: var(--ink);
+  cursor: pointer;
+  transition:
+    background-color var(--dur) var(--ease-out),
+    border-color var(--dur) var(--ease-out),
+    color var(--dur) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.button svg {
+  width: 44%;
+  height: 44%;
+  fill: currentColor;
+}
+
+.button:active {
+  transform: scale(0.94);
+}
+
+.button[aria-pressed='true'] {
+  border-color: var(--deck);
+  background: var(--deck);
+  color: var(--chassis);
+}

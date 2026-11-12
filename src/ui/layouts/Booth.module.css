@@ -1,0 +1,55 @@
+.booth {
+  /* Sized from the window's height as well as its width, so the crossfader stays in view. */
+  --platter-max: clamp(120px, 33dvh, 340px);
+  --transport-size: var(--touch-play);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-5) var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-panel);
+  background: var(--panel);
+}
+
+/* Same parts, smaller, as the modes add more around them. */
+.booth[data-mode='mix'] {
+  --platter-max: clamp(120px, 31dvh, 300px);
+  --transport-size: 60px;
+}
+
+.booth[data-mode='pro'] {
+  --platter-max: clamp(110px, 26dvh, 220px);
+  --transport-size: var(--touch-min);
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+.mixer {
+  grid-column: 1 / -1;
+  justify-self: center;
+  width: 100%;
+  max-width: 520px;
+}
+
+@media (min-width: 900px) {
+  .booth {
+    gap: var(--space-6);
+    padding: var(--space-6);
+  }
+
+  /* Four decks in a row, with A and B in the middle next to the mixer. */
+  .booth[data-mode='pro'] .side {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .booth[data-mode='pro'] .left {
+    flex-direction: row-reverse;
+  }
+}

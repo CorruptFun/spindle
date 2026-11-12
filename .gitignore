@@ -1,0 +1,27 @@
+# Dependencies and build output
+node_modules/
+dist/
+dev-dist/
+coverage/
+*.tsbuildinfo
+
+# Local environment. Never commit keys.
+.env
+.env.*
+!.env.example
+.dev.vars
+*.p8
+*.pem
+
+# Tooling
+.wrangler/
+playwright-report/
+test-results/
+*.local
+
+# OS and editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json

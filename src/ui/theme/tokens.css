@@ -1,0 +1,64 @@
+/*
+ * Design tokens. Components use these variables and never a literal colour,
+ * size or duration. The reasoning is in docs/DESIGN.md.
+ */
+:root {
+  color-scheme: dark;
+
+  /* Chassis: warm near-black neutrals. `--well` is for recessed slots. */
+  --chassis: #151518;
+  --panel: #1d1d21;
+  --panel-raised: #29292f;
+  --well: #0d0d0f;
+  --hairline: #36363d;
+
+  /* Ink. `--ink-faint` is for marks and ticks, never for body text. */
+  --ink: #f3f1ea;
+  --ink-dim: #a6a4ab;
+  --ink-faint: #6f6d76;
+
+  /* Each deck owns one colour, always shown together with its letter. */
+  --deck-a: #35c4f0;
+  --deck-b: #ff8a3c;
+  --deck-c: #ff6fae;
+  --deck-d: #b4e03c;
+
+  /* Materials, only for drawing physical objects. */
+  --vinyl: #0b0b0d;
+  --vinyl-groove: rgb(255 255 255 / 6%);
+  --vinyl-sheen: rgb(255 255 255 / 9%);
+  --metal: #c9c8cf;
+  --scrim: rgb(0 0 0 / 45%);
+
+  /* Type */
+  --font: 'Figtree Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --text-xs: 0.6875rem;
+  --text-s: 0.8125rem;
+  --text-m: 1rem;
+  --text-l: 1.25rem;
+  --text-xl: 1.75rem;
+  --label-tracking: 0.09em;
+
+  /* Space: 4 px grid */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  /* Radius */
+  --radius-cap: 6px;
+  --radius-control: 12px;
+  --radius-panel: 20px;
+
+  /* Motion */
+  --dur-fast: 90ms;
+  --dur: 180ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* Smallest thing a finger should have to hit; Play mode uses the larger one. */
+  --touch-min: 48px;
+  --touch-play: 72px;
+}

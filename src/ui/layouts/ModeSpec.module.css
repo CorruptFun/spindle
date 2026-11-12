@@ -1,0 +1,39 @@
+.spec {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* Hardware-style labels: small, upper case, widely spaced. */
+.title,
+.group h3 {
+  color: var(--ink-dim);
+  font-size: var(--text-xs);
+  font-weight: 650;
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+}
+
+.groups {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-5);
+}
+
+@media (min-width: 720px) {
+  .groups {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-6);
+  }
+}
+
+.group h3 {
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.group li {
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--hairline);
+  font-size: var(--text-s);
+}

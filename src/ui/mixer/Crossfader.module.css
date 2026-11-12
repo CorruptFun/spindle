@@ -1,0 +1,87 @@
+.crossfader {
+  --cap-width: 30px;
+  --cap-height: 48px;
+  --slot-height: 10px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.ends {
+  display: flex;
+  flex: none;
+  gap: var(--space-1);
+}
+
+.end {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-cap);
+  background: var(--deck);
+  color: var(--chassis);
+  font-size: var(--text-s);
+  font-weight: 800;
+}
+
+/* The input is as tall as the cap so the whole cap is a touch target. */
+.slot {
+  flex: 1;
+  min-width: 0;
+  height: var(--cap-height);
+  margin: 0;
+  background: transparent;
+  cursor: grab;
+  appearance: none;
+  -webkit-appearance: none;
+  touch-action: none;
+}
+
+.slot:active {
+  cursor: grabbing;
+}
+
+/* The slot: a recessed track with a tick at the centre. */
+.slot::-webkit-slider-runnable-track {
+  height: var(--slot-height);
+  border: 1px solid var(--hairline);
+  border-radius: calc(var(--slot-height) / 2);
+  background:
+    linear-gradient(var(--ink-faint), var(--ink-faint)) center / 2px 100% no-repeat,
+    var(--well);
+}
+
+.slot::-moz-range-track {
+  height: var(--slot-height);
+  border: 1px solid var(--hairline);
+  border-radius: calc(var(--slot-height) / 2);
+  background:
+    linear-gradient(var(--ink-faint), var(--ink-faint)) center / 2px 100% no-repeat,
+    var(--well);
+}
+
+/* The cap: a light block with a grip line down the middle. */
+.slot::-webkit-slider-thumb {
+  width: var(--cap-width);
+  height: var(--cap-height);
+  margin-top: calc((var(--slot-height) - var(--cap-height)) / 2 - 1px);
+  border: 0;
+  border-radius: var(--radius-cap);
+  background:
+    linear-gradient(var(--chassis), var(--chassis)) center / 2px 64% no-repeat,
+    var(--ink);
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.slot::-moz-range-thumb {
+  width: var(--cap-width);
+  height: var(--cap-height);
+  border: 0;
+  border-radius: var(--radius-cap);
+  background:
+    linear-gradient(var(--chassis), var(--chassis)) center / 2px 64% no-repeat,
+    var(--ink);
+}

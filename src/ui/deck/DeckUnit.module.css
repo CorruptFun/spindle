@@ -1,0 +1,48 @@
+.unit {
+  --presence: 1;
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+  min-width: 0;
+}
+
+/* What is on the deck. */
+.strip {
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  gap: var(--space-2);
+  min-height: 28px;
+}
+
+.badge {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-cap);
+  background: var(--deck);
+  color: var(--chassis);
+  font-size: var(--text-s);
+  font-weight: 800;
+}
+
+.track {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink-dim);
+  font-size: var(--text-s);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Room for the colour ring that sits just outside the record. */
+.platter {
+  width: 100%;
+  max-width: var(--platter-max);
+  padding: 10px;
+}
