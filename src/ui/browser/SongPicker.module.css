@@ -1,76 +1,10 @@
-/*
- * A sheet that comes up from the bottom of a phone and sits in the middle of
- * anything larger. It really does sit above the booth, which the scrim behind
- * it says; it needs no shadow as well.
- */
-.sheet {
-  --sheet-max: 640px;
+/* What goes inside the sheet when choosing a song. The sheet itself is ui/components/Sheet. */
+.songs {
   --tile-min: calc(var(--space-7) * 2);
   --glyph: calc(var(--space-6) + var(--space-2));
-  width: 100%;
-  max-width: 100%;
-  max-height: 88dvh;
-  margin: auto 0 0;
-  padding: 0;
-  overflow: hidden;
-  border: 1px solid var(--hairline);
-  border-bottom: 0;
-  border-radius: var(--radius-panel) var(--radius-panel) 0 0;
-  background: var(--panel);
-  color: var(--ink);
-}
-
-.sheet[open] {
   display: flex;
   flex-direction: column;
-  transition:
-    transform var(--dur) var(--ease-out),
-    opacity var(--dur) var(--ease-out);
-}
-
-/* Arriving explains where it came from; leaving is instant, so nothing waits on it. */
-@starting-style {
-  .sheet[open] {
-    transform: translateY(100%);
-  }
-}
-
-.sheet::backdrop {
-  background: var(--scrim);
-}
-
-@media (min-width: 640px) {
-  .sheet {
-    width: calc(100% - 2 * var(--space-6));
-    max-width: var(--sheet-max);
-    max-height: min(720px, 85dvh);
-    margin: auto;
-    border-bottom: 1px solid var(--hairline);
-    border-radius: var(--radius-panel);
-  }
-
-  @starting-style {
-    .sheet[open] {
-      transform: translateY(var(--space-4));
-      opacity: 0;
-    }
-  }
-}
-
-/* Fills the dialog, so the only presses the dialog itself receives are on the backdrop. */
-.content {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.header {
-  display: flex;
-  flex: none;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-5) var(--space-5) var(--space-3);
+  gap: var(--space-5);
 }
 
 .badge {
@@ -86,12 +20,6 @@
   font-weight: 800;
 }
 
-.heading {
-  font-size: var(--text-l);
-  font-weight: 650;
-  line-height: 1.2;
-}
-
 .hidden {
   position: absolute;
   width: 1px;
@@ -99,18 +27,6 @@
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
-}
-
-.body {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: var(--space-5);
-  min-height: 0;
-  /* The top inset keeps the first row's focus ring inside the scrolling area. */
-  padding: var(--space-2) var(--space-5) var(--space-5);
-  overflow-y: auto;
-  overscroll-behavior: contain;
 }
 
 .error {
@@ -238,40 +154,4 @@
     animation: none;
     opacity: 0.6;
   }
-}
-
-.footer {
-  flex: none;
-  padding: var(--space-3) var(--space-5) calc(var(--space-3) + env(safe-area-inset-bottom));
-  border-top: 1px solid var(--hairline);
-}
-
-.close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  width: 100%;
-  min-height: var(--touch-min);
-  border: 1px solid var(--hairline);
-  border-radius: var(--radius-control);
-  background: var(--panel-raised);
-  font-weight: 650;
-  cursor: pointer;
-  transition:
-    border-color var(--dur) var(--ease-out),
-    transform var(--dur-fast) var(--ease-out);
-}
-
-.close:hover {
-  border-color: var(--ink-faint);
-}
-
-.close:active {
-  transform: scale(0.98);
-}
-
-.closeMark {
-  width: var(--space-5);
-  height: var(--space-5);
 }

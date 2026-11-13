@@ -106,25 +106,15 @@ export function TrackStrip({
       </span>
 
       {state === 'empty' && (
-        <>
-          <span className={styles.shape} aria-hidden="true">
-            <Mark name="add" />
-          </span>
-          <span className={styles.word} aria-hidden="true">
-            Song
-          </span>
-        </>
+        <span className={styles.shape} aria-hidden="true">
+          <Mark name="add" />
+        </span>
       )}
 
       {state === 'loading' && (
-        <>
-          <span className={styles.word} aria-hidden="true">
-            Loading
-          </span>
-          <span className={styles.line} aria-hidden="true">
-            <span className={styles.working} />
-          </span>
-        </>
+        <span className={styles.line} aria-hidden="true">
+          <span className={styles.working} />
+        </span>
       )}
 
       {state === 'loaded' && track && (

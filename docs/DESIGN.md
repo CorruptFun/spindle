@@ -30,6 +30,9 @@ first.
 6. **Honest screens.** No control that does nothing. No meter that is not measuring. No
    placeholder numbers. If a thing is not built, the screen says so plainly or leaves it out.
 
+7. **The instrument is the screen.** No headlines, explanations or plans on it, and as few
+   words as possible. Whatever needs explaining lives behind the ? button, in the guide.
+
 ## Tokens
 
 All values live in `src/ui/theme/tokens.css`. Components use the variables and never a literal

@@ -31,8 +31,8 @@ Four principles decide most arguments:
 | **Mix**  | Beginners and families | 2     | Adds waveforms, tempo, sync, EQ, filter, hot cues, loops, three effects, and guided lessons.    |
 | **Pro**  | Experienced DJs        | 2–4   | Everything: full mixer, beat FX, key lock, slip, beat jump, headphone cue, MIDI, and recording. |
 
-The exact control list per mode is typed data in `src/config/modes.ts`, and the app shell
-renders it, so the preview on screen is always the current plan.
+What each mode shows, built and planned, is listed in [FEATURES.md](FEATURES.md). None of it is
+shown in the app: the screen is the instrument, and the guide is behind the ? button.
 
 ## Milestones
 

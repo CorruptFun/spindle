@@ -1,0 +1,29 @@
+.tips {
+  display: flex;
+  flex-direction: column;
+}
+
+/* One thing to try per row: its picture, then one sentence. */
+.tip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: var(--touch-min);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--hairline);
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.mark {
+  flex: none;
+  width: var(--space-5);
+  height: var(--space-5);
+  color: var(--ink);
+}
+
+.note {
+  margin-top: var(--space-4);
+  color: var(--ink-dim);
+  font-size: var(--text-s);
+}
