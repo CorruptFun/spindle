@@ -66,21 +66,6 @@
   color: var(--deck);
 }
 
-.word {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  color: var(--ink);
-  font-size: var(--text-s);
-  font-weight: 650;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.strip[data-state='loading'] .word {
-  color: var(--ink-dim);
-}
-
 .title {
   flex: 1;
   min-width: 0;

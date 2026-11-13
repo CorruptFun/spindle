@@ -10,6 +10,13 @@ body,
   height: 100%;
 }
 
+html {
+  /* Fast repeated taps are playing, not a request to zoom. */
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
   background: var(--chassis);
@@ -25,6 +32,7 @@ body {
   -webkit-tap-highlight-color: transparent;
   user-select: none;
   -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 h1,
