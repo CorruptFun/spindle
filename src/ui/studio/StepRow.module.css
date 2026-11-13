@@ -1,0 +1,211 @@
+/*
+ * A row of step keys. The row lays itself out by the room it is given, not the
+ * window: four beats across when a key per step fits at full touch size, two
+ * beats a line when it does not, and one beat a line on a phone, so a key is
+ * never narrower than a fingertip.
+ */
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+  min-width: 0;
+  container-type: inline-size;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+  min-height: var(--touch-min);
+}
+
+.heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  font-size: var(--text-m);
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+/* The pad's colour, as a swatch the size of a badge: the pad these keys belong to. */
+.chip {
+  flex: none;
+  width: var(--space-5);
+  height: var(--space-5);
+  border-radius: var(--radius-cap);
+  background: var(--family);
+}
+
+.hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.bars {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Hardware-style label. */
+.barsLabel,
+.beatNumber {
+  color: var(--ink-dim);
+  font-size: var(--text-xs);
+  font-weight: 650;
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+}
+
+/* The same segmented switch as the skill-level switch: a slot with a light cap on the bar shown. */
+.switch {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-control);
+  background: var(--well);
+}
+
+.barOption {
+  min-width: calc(var(--touch-min) - 8px);
+  min-height: calc(var(--touch-min) - 8px);
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: calc(var(--radius-control) - 3px);
+  background: transparent;
+  color: var(--ink-dim);
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    background-color var(--dur) var(--ease-out),
+    color var(--dur) var(--ease-out);
+}
+
+@media (hover: hover) {
+  .barOption:hover {
+    color: var(--ink);
+  }
+}
+
+.barOption[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--chassis);
+}
+
+/* One beat a line (phone), the beat's number at its left. */
+.keys {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-2) var(--space-3);
+}
+
+.beat {
+  display: grid;
+  grid-template-columns: var(--space-4) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.beatNumber {
+  text-align: center;
+}
+
+.beatKeys {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-1);
+}
+
+/* Two beats a line: eight keys across. 8 keys at --touch-min, their gaps and the beat gap. */
+@container (min-width: 440px) {
+  .keys {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .beat {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto;
+  }
+
+  .beatNumber {
+    text-align: start;
+    padding-inline-start: var(--space-1);
+  }
+}
+
+/* All sixteen in one row. */
+@container (min-width: 860px) {
+  .keys {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* A step key: a small cap with a lamp at its top edge. */
+.key {
+  position: relative;
+  min-width: 0;
+  min-height: var(--touch-min);
+  padding: 0;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-cap);
+  background: var(--panel-raised);
+  cursor: pointer;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+@media (hover: hover) {
+  .key:hover {
+    border-color: var(--ink-faint);
+  }
+}
+
+.key:active {
+  transform: scale(0.94);
+}
+
+.key[data-state='on'] {
+  border-color: var(--family);
+  background: color-mix(in oklab, var(--family) 38%, var(--panel-raised));
+}
+
+.key[data-state='accent'] {
+  border-color: var(--family);
+  background: var(--family);
+}
+
+/* The playhead lamp. Dark until the loop reaches this step. */
+.lamp {
+  position: absolute;
+  top: var(--space-1);
+  left: 50%;
+  width: 40%;
+  height: var(--space-1);
+  border-radius: calc(var(--space-1) / 2);
+  background: var(--well);
+  transform: translateX(-50%);
+}
+
+/* Lit: ink, edged in the well's black so it reads on the brightest accent key too. */
+.key[data-now] .lamp {
+  background: var(--ink);
+  outline: 1px solid var(--well);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .key:active {
+    transform: none;
+  }
+}

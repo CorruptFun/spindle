@@ -1,0 +1,127 @@
+/*
+ * Eight rubber pads on a panel, four by two at every width. Each pad is tinted
+ * with its family's colour while it is quiet and fills with that colour when
+ * it sounds: the light is the sound, not decoration. A pad stands a few pixels
+ * proud of the panel on a solid lip and goes down onto it when hit.
+ */
+.grid {
+  /* How far a pad stands above the panel, and so how far it travels when hit. */
+  --pad-lip: 3px;
+  /* Never bigger than a hand needs: past this the grid stops growing. */
+  --pad-grid-max: 560px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-2);
+  width: 100%;
+  max-width: var(--pad-grid-max);
+  margin-inline: auto;
+}
+
+@media (min-width: 640px) {
+  .grid {
+    gap: var(--space-3);
+  }
+}
+
+/* The whole cell (pad and its printed name) is the touch target. */
+.cell {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: 0 0 var(--pad-lip);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  cursor: pointer;
+  /* Every finger is a hit: no scrolling, zooming, long-press menu or text selection here. */
+  touch-action: none;
+  -webkit-touch-callout: none;
+}
+
+.pad {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-height: var(--touch-play);
+  aspect-ratio: 1;
+  border: 1px solid color-mix(in oklab, var(--family) 55%, var(--panel-raised));
+  border-radius: var(--radius-control);
+  background: color-mix(in oklab, var(--family) 26%, var(--panel-raised));
+  /* The pad's own side, standing on the panel. */
+  box-shadow: 0 var(--pad-lip) 0 var(--well);
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+
+/* Lit from inside in the family's colour. Opacity is written every frame by the drawing loop. */
+.light {
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: var(--family);
+  opacity: 0;
+  will-change: opacity;
+}
+
+@media (hover: hover) {
+  .cell:hover .pad {
+    border-color: var(--family);
+  }
+}
+
+/* Down onto the lip at once (set in the press event itself), back up with a little ease. */
+.cell[data-down] .pad {
+  box-shadow: 0 0 0 var(--well);
+  transform: translateY(var(--pad-lip));
+  transition: none;
+}
+
+/* The pad whose steps are open below: an ink ring around it, a light cap on its name. */
+.cell[data-selected='true'] .pad::after {
+  content: '';
+  position: absolute;
+  inset: calc(-1 * var(--space-1) - 1px);
+  border: 2px solid var(--ink);
+  border-radius: calc(var(--radius-control) + var(--space-1));
+  pointer-events: none;
+}
+
+/* The name printed on the faceplate under the pad. */
+.name {
+  overflow: hidden;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-cap);
+  color: var(--ink-dim);
+  font-size: var(--text-xs);
+  font-weight: 650;
+  line-height: 1.6;
+  letter-spacing: var(--label-tracking);
+  text-align: center;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition:
+    background-color var(--dur) var(--ease-out),
+    color var(--dur) var(--ease-out);
+}
+
+.cell[data-selected='true'] .name {
+  background: var(--ink);
+  color: var(--chassis);
+}
+
+/* The pad still lights; it just does not move. */
+@media (prefers-reduced-motion: reduce) {
+  .pad,
+  .cell[data-down] .pad {
+    transform: none;
+    transition: none;
+  }
+
+  .cell[data-down] .pad {
+    box-shadow: 0 var(--pad-lip) 0 var(--well);
+  }
+}

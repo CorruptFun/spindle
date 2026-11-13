@@ -23,6 +23,17 @@
   --deck-c: #ff6fae;
   --deck-d: #b4e03c;
 
+  /* In the Studio the same four colours mark the four families of drum sound:
+     low drums, snares and claps, hi-hats, and percussion. */
+  --family-low: var(--deck-a);
+  --family-snare: var(--deck-b);
+  --family-hat: var(--deck-c);
+  --family-perc: var(--deck-d);
+
+  /* Recording, and only recording: the red lamp every recorder has. No family or
+     deck colour may stand in for it, and it is never used for anything else. */
+  --record: #f2463c;
+
   /* Materials, only for drawing physical objects. */
   --vinyl: #0b0b0d;
   --vinyl-groove: rgb(255 255 255 / 6%);

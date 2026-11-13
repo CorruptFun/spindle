@@ -1,0 +1,123 @@
+/*
+ * The kits, side by side in a row of tiles. Shape first, name beside it when
+ * names are shown. Kit shapes are drawn in ink: in the Studio the four colours
+ * belong to the drum families, and a kit is not one of them.
+ */
+.kits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.tile {
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-width: var(--touch-min);
+  min-height: var(--touch-min);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-control);
+  background: var(--panel-raised);
+  color: var(--ink);
+  cursor: pointer;
+  transition:
+    background-color var(--dur) var(--ease-out),
+    border-color var(--dur) var(--ease-out),
+    color var(--dur) var(--ease-out),
+    opacity var(--dur) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+/* Without names (Play mode) the tiles are square caps at Play mode's touch size, and do not stretch. */
+.kits[data-names='false'] .tile {
+  flex: none;
+  width: var(--touch-play);
+  height: var(--touch-play);
+  padding: 0;
+}
+
+.kits[data-names='false'] .glyph {
+  width: var(--space-6);
+  height: var(--space-6);
+}
+
+@media (hover: hover) {
+  .tile:hover {
+    border-color: var(--ink-faint);
+  }
+}
+
+.tile:active {
+  transform: scale(0.96);
+}
+
+/* The chosen kit: a light cap. */
+.tile[aria-pressed='true'] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--chassis);
+  cursor: default;
+}
+
+.tile[aria-pressed='true']:active {
+  transform: none;
+}
+
+.glyph {
+  flex: none;
+  width: var(--space-5);
+  height: var(--space-5);
+  padding: calc(var(--space-1) / 2);
+}
+
+.name {
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--text-s);
+  font-weight: 650;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Getting the chosen kit ready: its shape breathes at the app's one slow pace. */
+.tile[aria-busy='true'] {
+  cursor: progress;
+}
+
+.tile[aria-busy='true'] .glyph {
+  animation: breathe var(--dur-pulse) ease-in-out infinite alternate;
+}
+
+/* While one kit is prepared, the others wait. */
+.tile[aria-disabled='true'] {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.tile[aria-disabled='true']:active {
+  transform: none;
+}
+
+@keyframes breathe {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile[aria-busy='true'] .glyph {
+    animation: none;
+    opacity: 0.6;
+  }
+
+  .tile:active {
+    transform: none;
+  }
+}

@@ -10,8 +10,8 @@
 
 import type { LoadedTrack } from '../types';
 import { TrackLoadError } from '../types';
-import type { MasterReport } from './dsp';
-import { addPingPongLoop, addReverbLoop, highpassLoop, masterLoop } from './dsp';
+import type { MasterReport } from '@/synth/dsp';
+import { addPingPongLoop, addReverbLoop, highpassLoop, masterLoop } from '@/synth/dsp';
 import { SONGS } from './songs';
 import { Studio } from './studio';
 import { CRATE_BARS, CRATE_BPM, CRATE_TRACKS } from './tracks';

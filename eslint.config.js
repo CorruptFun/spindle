@@ -4,7 +4,16 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 /** Folders that must run without a UI: no React, no stores, no components. */
-const HEADLESS = ['lib', 'engine', 'analysis', 'sources', 'library', 'controllers'];
+const HEADLESS = [
+  'lib',
+  'synth',
+  'engine',
+  'studio',
+  'analysis',
+  'sources',
+  'library',
+  'controllers',
+];
 
 const noUiImports = {
   group: [
@@ -19,6 +28,11 @@ const noUiImports = {
   ],
   message: 'This folder must stay free of UI and state-library code (docs/ARCHITECTURE.md).',
 };
+
+/** Every way a page can send data to a server. */
+const NETWORK_APIS = ['fetch', 'XMLHttpRequest', 'WebSocket', 'EventSource', 'RTCPeerConnection'];
+const NO_NETWORK =
+  'The app does not talk to any server (README, "Privacy"). Do not add network code without changing that promise.';
 
 export default tseslint.config(
   { ignores: ['dist', 'dev-dist', 'coverage', 'public'] },
@@ -37,6 +51,30 @@ export default tseslint.config(
   },
 
   {
+    // Privacy: the app works entirely on the device. Nothing in src/ may open a network
+    // connection, so adding one is a deliberate, reviewed change to this list (and to the
+    // content security policy in vite.config.ts and the privacy section of the README).
+    files: ['src/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-globals': [
+        'error',
+        ...NETWORK_APIS.map((name) => ({ name, message: NO_NETWORK })),
+      ],
+      'no-restricted-properties': [
+        'error',
+        ...NETWORK_APIS.flatMap((property) =>
+          ['window', 'globalThis', 'self'].map((object) => ({
+            object,
+            property,
+            message: NO_NETWORK,
+          })),
+        ),
+        { object: 'navigator', property: 'sendBeacon', message: NO_NETWORK },
+      ],
+    },
+  },
+
+  {
     files: HEADLESS.map((folder) => `src/${folder}/**/*.ts`),
     rules: { 'no-restricted-imports': ['error', { patterns: [noUiImports] }] },
   },
@@ -51,7 +89,14 @@ export default tseslint.config(
           patterns: [
             noUiImports,
             {
-              group: ['@/sources/**', '@/library/**', '@/controllers/**', '@/analysis/**'],
+              group: [
+                '@/sources/**',
+                '@/library/**',
+                '@/controllers/**',
+                '@/analysis/**',
+                '@/studio/**',
+                '@/synth/**',
+              ],
               message: 'engine and lib may only import from lib and engine.',
             },
           ],

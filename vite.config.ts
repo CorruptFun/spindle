@@ -20,11 +20,52 @@ function brandHtml(): Plugin {
   };
 }
 
+/**
+ * What the published page is allowed to load and talk to: itself, and nothing
+ * else. The browser enforces it, so a mistake or a bad dependency cannot quietly
+ * send anything to another server. Every `'self'` here is a promise in README's
+ * privacy section; widen one only together with that text.
+ *
+ * Built pages only: the dev server needs inline scripts and a websocket for
+ * hot reload. The host cannot send headers, so the policy travels as a meta tag
+ * (which is why there is no frame-ancestors: browsers ignore it there).
+ */
+const CONTENT_SECURITY_POLICY = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self'",
+  "img-src 'self' data:",
+  "font-src 'self'",
+  "connect-src 'self'",
+  "worker-src 'self'",
+  "child-src 'self'",
+  "media-src 'self' blob:",
+  "manifest-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'none'",
+].join('; ');
+
+function contentSecurityPolicy(): Plugin {
+  return {
+    name: 'content-security-policy',
+    apply: 'build',
+    transformIndexHtml: () => [
+      {
+        tag: 'meta',
+        attrs: { 'http-equiv': 'Content-Security-Policy', content: CONTENT_SECURITY_POLICY },
+        injectTo: 'head-prepend',
+      },
+    ],
+  };
+}
+
 export default defineConfig({
   // Set BASE_PATH=/<repo>/ when hosting under a sub-path (see .env.example).
   base: process.env.BASE_PATH ?? '/',
   plugins: [
     brandHtml(),
+    contentSecurityPolicy(),
     react(),
     VitePWA({
       // 'prompt', not 'autoUpdate': a new version must never reload the page mid-mix.

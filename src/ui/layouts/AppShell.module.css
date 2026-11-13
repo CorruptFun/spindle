@@ -16,6 +16,13 @@
   border-bottom: 1px solid var(--hairline);
 }
 
+/* The two switches: which room, and how much of it to show. */
+.switches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
 .brand {
   display: flex;
   align-items: center;

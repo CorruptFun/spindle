@@ -18,7 +18,9 @@ first.
    pulling a record back up to speed.
 2. **Colour means something.** Each deck owns one colour, and that colour marks everything
    belonging to it: the record label, the ring, its side of the crossfader, later its waveform.
-   Everything else is neutral. There is no decorative colour.
+   In the Studio, where there are no decks, the same four colours mark the four families of
+   drum sound: low drums, snares and claps, hi-hats, percussion. Everything else is neutral.
+   There is no decorative colour.
 3. **One of everything.** One typeface. One spacing grid. One radius scale. One set of motion
    timings. A new value needs a reason and goes in the tokens file.
 4. **Same parts at every size.** Play mode is not a different app. It is the same record, the

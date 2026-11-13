@@ -22,6 +22,7 @@ interface Channel {
 
 export class Mixer implements MixerControl {
   readonly output: GainNode;
+  readonly padsInput: GainNode;
 
   private readonly context: BaseAudioContext;
   private readonly channels = new Map<DeckId, Channel>();
@@ -29,6 +30,7 @@ export class Mixer implements MixerControl {
   private readonly masterVolume: GainNode;
   private readonly limiter: DynamicsCompressorNode;
   private readonly masterMeter: Meter;
+  private readonly padsMeter: Meter;
 
   private crossfaderPosition = 0.5;
   private crossfaderCurve: CrossfaderCurve = 'blend';
@@ -56,6 +58,15 @@ export class Mixer implements MixerControl {
     this.masterVolume.connect(this.limiter);
     this.limiter.connect(this.output);
     this.masterMeter = this.createMeter(this.output);
+
+    // The pads join the sum directly, after the crossfader stage, so it never fades them.
+    this.padsInput = context.createGain();
+    this.padsInput.gain.value = channelFaderGain(1);
+    this.padsInput.channelCount = 2;
+    this.padsInput.channelCountMode = 'explicit';
+    this.padsInput.channelInterpretation = 'speakers';
+    this.padsInput.connect(this.sum);
+    this.padsMeter = this.createMeter(this.padsInput);
 
     for (const deck of decks) {
       if (this.channels.has(deck)) continue;
@@ -99,12 +110,21 @@ export class Mixer implements MixerControl {
     this.applyCrossfader();
   }
 
+  setPadsLevel(position: number): void {
+    if (!Number.isFinite(position)) return;
+    this.glide(this.padsInput.gain, channelFaderGain(clamp(position, 0, 1)));
+  }
+
   setMasterVolume(position: number): void {
     this.glide(this.masterVolume.gain, channelFaderGain(clamp(position, 0, 1)));
   }
 
   channelLevel(deck: DeckId): number {
     return this.read(this.channel(deck).meter);
+  }
+
+  padsLevel(): number {
+    return this.read(this.padsMeter);
   }
 
   masterLevel(): number {
@@ -118,6 +138,8 @@ export class Mixer implements MixerControl {
       channel.crossfade.disconnect();
       channel.meter.analyser.disconnect();
     }
+    this.padsInput.disconnect();
+    this.padsMeter.analyser.disconnect();
     this.sum.disconnect();
     this.masterVolume.disconnect();
     this.limiter.disconnect();

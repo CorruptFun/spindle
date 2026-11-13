@@ -6,7 +6,7 @@
  * that leads back round to the top. Every song has sound on its first beat.
  */
 
-import type { EchoOptions, ReverbOptions } from './dsp';
+import type { EchoOptions, ReverbOptions } from '@/synth/dsp';
 import {
   bounceBass,
   clap,
@@ -25,7 +25,7 @@ import {
   tom,
   whistle,
   woodblock,
-} from './instruments';
+} from '@/synth/instruments';
 import { barStep, midiToFreq, noteToMidi, parsePattern, scaleStep } from './sequence';
 import type { Studio } from './studio';
 import { CRATE_BARS, chordAtBar } from './tracks';

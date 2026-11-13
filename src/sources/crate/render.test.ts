@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { TrackLoadError } from '../types';
-import { peak, rms } from './dsp';
+import { peak, rms } from '@/synth/dsp';
 import { CEILING, renderCrateTrack, renderCrateTrackWithReport, TARGET_RMS } from './render';
 import { loopFrames, stepFrame } from './sequence';
 import { CRATE_BARS, CRATE_BPM, CRATE_TRACKS } from './tracks';

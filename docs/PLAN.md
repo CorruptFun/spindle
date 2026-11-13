@@ -140,6 +140,53 @@ app makes it obvious why that song cannot go on a deck and how to get one that c
 Stem separation (vocals / drums / melody), microphone input, visualiser, sharing recorded
 mixes, syncing a library between devices.
 
+## Studio track
+
+The app has two rooms. The **Decks** are for playing records; the milestones above build them.
+The **Studio** is for making music from nothing, and has its own stages below. Both rooms
+share one engine, one design language and the same three skill modes.
+
+Logic, FL Studio and Pro Tools are the reference for how each stage should feel, not a promise
+to match them. Those programs carry decades of features, and plug-in formats a browser cannot
+host. The aim is a drum machine that grows into a small, friendly studio.
+
+### S1 · Beats — built, waiting on ears
+
+- Eight drum pads and three kits, every sound synthesised in code.
+- Eight ready-made two-bar loops to switch between. A new loop waits for the bar line, so
+  changing never falls out of time.
+- Make them yours: record your own hits into a loop as it plays, or edit one pad's steps at a
+  time on sixteen step buttons. Reset brings the original back.
+- Tempo, and swing in Pro. The beat is kept on the device between visits.
+
+**Done when** a child can make a beat they are proud of with no instructions.
+
+### S2 · Instruments
+
+Bass, keys and lead sounds from the same synth. A keyboard locked to a scale, so no note is
+wrong. A note editor for melodies. Loops that hold notes as well as drums.
+
+### S3 · Songs
+
+Chain loops into a song: first as a simple order, then on a timeline. Mute and solo. A mixer
+channel and effects for each sound.
+
+### S4 · Record
+
+Record a voice or an instrument through the microphone, and put your own recorded sounds on
+the pads. This is the first feature that needs a permission; it is asked for only at the moment
+of recording, and the recording stays on the device.
+
+### S5 · Finish and share
+
+Save the song as an audio file. Save and open projects as files. Send a beat from the Studio
+to a deck.
+
+### Where the rooms meet
+
+Only the room on screen makes sound today. Once tempo sync exists (M3), the pads can come into
+the booth and play in time with the records.
+
 ## Streaming, in one paragraph
 
 Apple Music and Spotify can be **played** inside the app. They cannot be **mixed**. Their audio
@@ -150,6 +197,9 @@ owns, which includes anything bought from the iTunes Store. The detail and the s
 [STREAMING.md](STREAMING.md).
 
 ## Decisions needed from the owner
+
+The next piece of work is a choice between the two rooms: **M2** (waveforms and tempo at the
+decks) or **S2** (instruments in the Studio).
 
 | #   | Decision                                                                                                                                                                    | Needed by | Default if nobody decides                 |
 | --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ----------------------------------------- |

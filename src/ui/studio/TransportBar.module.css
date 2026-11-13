@@ -1,0 +1,228 @@
+/*
+ * The Studio's transport. Every part is a sibling of one already in the booth:
+ * the play button is the decks' play button, the round buttons are the decks'
+ * back-to-start button, the tempo window is a recessed display like the track
+ * strip, and swing is a short crossfader.
+ */
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4) var(--space-5);
+}
+
+.buttons {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* A labelled control: hardware label above, control below. */
+.control {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.label {
+  color: var(--ink-dim);
+  font-size: var(--text-xs);
+  font-weight: 650;
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+}
+
+/* Play / stop: the decks' transport button. Pressed, it is a light cap: there is no deck colour here. */
+.play {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--touch-play);
+  height: var(--touch-play);
+  padding: 0;
+  border: 1px solid var(--hairline);
+  border-radius: 50%;
+  background: var(--panel-raised);
+  color: var(--ink);
+  cursor: pointer;
+  transition:
+    background-color var(--dur) var(--ease-out),
+    border-color var(--dur) var(--ease-out),
+    color var(--dur) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.play svg {
+  width: 44%;
+  height: 44%;
+  fill: currentColor;
+}
+
+.play[aria-pressed='true'] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--chassis);
+}
+
+/* The smaller round buttons: record, minus, plus, reset. */
+.record,
+.nudge,
+.reset {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--touch-min);
+  height: var(--touch-min);
+  padding: 0;
+  border: 1px solid var(--hairline);
+  border-radius: 50%;
+  background: var(--panel-raised);
+  color: var(--ink);
+  cursor: pointer;
+  /* Minus and plus repeat while held: no long-press menu or scrolling to get in the way. */
+  touch-action: none;
+  -webkit-touch-callout: none;
+  transition:
+    background-color var(--dur) var(--ease-out),
+    border-color var(--dur) var(--ease-out),
+    color var(--dur) var(--ease-out),
+    opacity var(--dur) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.play:active,
+.record:active,
+.nudge:active,
+.reset:active {
+  transform: scale(0.94);
+}
+
+.mark {
+  width: 44%;
+  height: 44%;
+}
+
+/* Record: a red lamp on the cap. Recording, the whole cap is lit red. */
+.record {
+  color: var(--record);
+}
+
+.record[aria-pressed='true'] {
+  border-color: var(--record);
+  background: var(--record);
+  color: var(--chassis);
+}
+
+/* Nothing to reset, or the tempo is at its end: the cap is still there, faded, and does nothing. */
+.nudge[aria-disabled='true'],
+.reset[aria-disabled='true'] {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.nudge[aria-disabled='true']:active,
+.reset[aria-disabled='true']:active {
+  transform: none;
+}
+
+.tempo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* The tempo window: recessed like the track strip, the number in tabular figures so it never jitters. */
+.readout {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: var(--space-1);
+  min-width: calc(var(--space-7) + var(--space-5));
+  min-height: var(--touch-min);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-control);
+  background: var(--well);
+  cursor: default;
+}
+
+.number {
+  font-size: var(--text-l);
+  font-weight: 650;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+}
+
+.unit {
+  color: var(--ink-dim);
+  font-size: var(--text-xs);
+  font-weight: 650;
+  letter-spacing: var(--label-tracking);
+}
+
+/* Swing: the crossfader's slot and cap, shorter, starting from straight at the left. */
+.swing {
+  --cap-width: var(--fader-cap);
+  --cap-height: var(--touch-min);
+  --slot-height: var(--fader-slot);
+  width: calc(var(--touch-min) * 3);
+  height: var(--cap-height);
+  margin: 0;
+  background: transparent;
+  cursor: grab;
+  appearance: none;
+  -webkit-appearance: none;
+  touch-action: none;
+}
+
+.swing:active {
+  cursor: grabbing;
+}
+
+.swing::-webkit-slider-runnable-track {
+  height: var(--slot-height);
+  border: 1px solid var(--hairline);
+  border-radius: calc(var(--slot-height) / 2);
+  background: var(--well);
+}
+
+.swing::-moz-range-track {
+  height: var(--slot-height);
+  border: 1px solid var(--hairline);
+  border-radius: calc(var(--slot-height) / 2);
+  background: var(--well);
+}
+
+.swing::-webkit-slider-thumb {
+  width: var(--cap-width);
+  height: var(--cap-height);
+  margin-top: calc((var(--slot-height) - var(--cap-height)) / 2 - 1px);
+  border: 0;
+  border-radius: var(--radius-cap);
+  background:
+    linear-gradient(var(--chassis), var(--chassis)) center / 2px 64% no-repeat,
+    var(--ink);
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.swing::-moz-range-thumb {
+  width: var(--cap-width);
+  height: var(--cap-height);
+  border: 0;
+  border-radius: var(--radius-cap);
+  background:
+    linear-gradient(var(--chassis), var(--chassis)) center / 2px 64% no-repeat,
+    var(--ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .play:active,
+  .record:active,
+  .nudge:active,
+  .reset:active {
+    transform: none;
+  }
+}

@@ -3,12 +3,21 @@ import { Deck, loadDeckWorklet } from './deck/Deck';
 import type { DeckControl } from './deck/types';
 import { Mixer } from './mixer/Mixer';
 import type { MixerControl } from './mixer/types';
+import { PadBank } from './sampler/PadBank';
+import type { PadBankControl } from './sampler/types';
+import { Sequencer } from './sequencer/Sequencer';
+import type { SequencerControl } from './sequencer/types';
 
-/** The whole instrument: four decks plugged into a mixer, plugged into the speakers. */
+/**
+ * The whole instrument: four decks and a bank of drum pads plugged into a
+ * mixer, plugged into the speakers, with a sequencer to play the pads in time.
+ */
 export interface AudioEngine {
   readonly context: AudioContext;
   readonly mixer: MixerControl;
   deck(id: DeckId): DeckControl;
+  readonly pads: PadBankControl;
+  readonly sequencer: SequencerControl;
   /**
    * Browsers keep audio silent until the person touches the page. Call this
    * from a touch, click or key press; calling it again is harmless.
@@ -31,7 +40,7 @@ export async function createAudioEngine(
   if (session) session.type = 'playback';
 
   // 'interactive' asks for the shortest output delay the device can manage,
-  // which is what makes a scratch feel attached to the finger.
+  // which is what makes a scratch, or a finger on a pad, feel attached to the sound.
   const context = new AudioContext({ latencyHint: 'interactive' });
   await loadDeckWorklet(context);
 
@@ -42,11 +51,18 @@ export async function createAudioEngine(
     deck.output.connect(mixer.input(id));
     decks.set(id, deck);
   }
+
+  const pads = new PadBank(context);
+  pads.output.connect(mixer.padsInput);
+  const sequencer = new Sequencer(context, pads);
+
   mixer.output.connect(context.destination);
 
   return {
     context,
     mixer,
+    pads,
+    sequencer,
     deck(id) {
       const deck = decks.get(id);
       if (!deck) throw new Error(`No deck ${id} in this engine`);
@@ -66,6 +82,8 @@ export async function createAudioEngine(
       return context.state === 'running';
     },
     async dispose() {
+      sequencer.dispose();
+      pads.dispose();
       for (const deck of decks.values()) deck.dispose();
       mixer.dispose();
       await context.close();

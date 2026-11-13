@@ -46,11 +46,14 @@ src/
     deck/         One loaded track and its playhead.
     mixer/        Faders, crossfader, EQ, filter, cue bus, master.
     fx/           Effect units and their registry.
-    sampler/      Pad bank.
+    sampler/      The eight drum pads: one-shot sounds, played now or at an exact time.
+    sequencer/    Keeps the beat and plays drum loops on the pads.
     sync/         Tempo maths, beat grids, sync, quantize, key lock.
     recorder/     Capture the master bus to a file.
     worklets/     Code that runs on the audio thread.
   analysis/     Web Workers: waveform peaks, BPM, beat grid, key.
+  synth/        Sounds made by code: drums, basses, keys and the DSP under them. No audio files.
+  studio/       Making music: drum kits, ready-made loops, loop edits, saving a beat. Plain data.
   sources/      Where music comes from. One folder per source, one contract.
     crate/        Starter songs, synthesised in code. Full decks.
     local/        Files the listener owns. Full decks.
@@ -66,6 +69,7 @@ src/
     deck/         Platter, waveform, transport, cues, loops.
     mixer/        Channel strips, crossfader, FX panel, pads.
     browser/      Library and jukebox browsing.
+    studio/       Drum pads, loop tiles, step buttons, transport, kit picker.
     lessons/      Guided lessons and the grown-ups corner.
     layouts/      The three skill-mode layouts and the app shell.
 services/
@@ -141,7 +145,7 @@ in `state/` hold only what changes at human speed.
 | ------------------------------------- | --------------------------------- |
 | Imported audio, cached waveform peaks | Origin-private file system (OPFS) |
 | Track records, cues, grids, crates    | IndexedDB                         |
-| Preferences                           | localStorage (through `state/`)   |
+| Preferences, and the Studio beat      | localStorage (through `state/`)   |
 | App code and bundled crate            | Service worker cache              |
 
 Nothing leaves the device. The app asks the browser for persistent storage once the listener

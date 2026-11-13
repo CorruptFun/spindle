@@ -31,3 +31,17 @@
   background: var(--ink);
   color: var(--chassis);
 }
+
+/* An option that carries a small picture before its word. */
+.withMark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.mark {
+  flex: none;
+  /* Sized from the text beside it. */
+  width: 1.125em;
+  height: 1.125em;
+}

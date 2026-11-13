@@ -9,3 +9,4 @@
 export * from './booth';
 export * from './pwa';
 export * from './settings';
+export * from './studio';

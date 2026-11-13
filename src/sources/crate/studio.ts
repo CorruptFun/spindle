@@ -5,10 +5,10 @@
  * seamless (the "tail folded back onto the start").
  */
 
-import { addWrapped } from './dsp';
-import type { Stereo } from './instruments';
-import type { Rng } from './rng';
-import { createRng, seedFromString } from './rng';
+import { addWrapped } from '@/synth/dsp';
+import type { Stereo } from '@/synth/instruments';
+import type { Rng } from '@/synth/rng';
+import { createRng, seedFromString } from '@/synth/rng';
 import { loopFrames, stepFrame } from './sequence';
 
 export interface Placement {

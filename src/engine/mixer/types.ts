@@ -5,6 +5,8 @@ import type { CrossfaderCurve } from './crossfader';
 export interface MixerControl {
   /** Where a deck's output plugs in. */
   input(deck: DeckId): AudioNode;
+  /** Where the drum pads plug in. They join the mix after the crossfader, so it never fades them. */
+  readonly padsInput: AudioNode;
   /** The finished mix, after the limiter. The engine connects this to the speakers. */
   readonly output: AudioNode;
 
@@ -13,6 +15,8 @@ export interface MixerControl {
   /** 0 = hard left, 0.5 = centre, 1 = hard right. */
   setCrossfader(position: number): void;
   setCrossfaderCurve(curve: CrossfaderCurve): void;
+  /** Level of the drum pads as a whole: 0 = silent, 1 = full. */
+  setPadsLevel(position: number): void;
   /** Master volume travel: 0 = silent, 1 = full. */
   setMasterVolume(position: number): void;
 
@@ -21,6 +25,8 @@ export interface MixerControl {
    * full scale. For meters: call from a frame loop, never from React state.
    */
   channelLevel(deck: DeckId): number;
+  /** Peak level of the drum pads after their level control. */
+  padsLevel(): number;
   /** Peak level of the finished mix, after the limiter. */
   masterLevel(): number;
 

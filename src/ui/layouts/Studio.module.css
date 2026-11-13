@@ -1,0 +1,67 @@
+.studio {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-4);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-panel);
+  background: var(--panel);
+}
+
+/* What to play with: the kit, and the loops to hand. */
+.shelf {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* The pads are the instrument: centred, and as large as the window allows. */
+.pads {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.transport {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.unavailable {
+  padding: var(--space-6);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-panel);
+  background: var(--panel);
+}
+
+.unavailable h2 {
+  font-size: var(--text-l);
+}
+
+.unavailable p {
+  margin-top: var(--space-2);
+  color: var(--ink-dim);
+}
+
+@media (min-width: 900px) {
+  .studio {
+    gap: var(--space-6);
+    padding: var(--space-6);
+  }
+
+  /* With room to spare, the kit sits beside the loops. */
+  .shelf {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: var(--space-6);
+  }
+
+  .shelf > :last-child {
+    flex: 1;
+    min-width: 0;
+  }
+}
