@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import type { KeyboardEvent, MouseEvent, PointerEvent } from 'react';
 import { MAX_BPM, MAX_SWING, MIN_BPM } from '@/engine/sequencer/types';
-import { Mark } from '@/ui/components/TrackGlyph';
+import { Mark, type MarkName } from '@/ui/components/TrackGlyph';
 import { describeSwing, nudgeTempo, tempoForKey } from './tempo';
 import styles from './TransportBar.module.css';
 
@@ -15,20 +15,27 @@ interface TransportBarProps {
   showRecord: boolean;
   showTempo: boolean;
   showSwing: boolean;
-  showReset: boolean;
+  /** Undo, Clear and Reset: what can be done to the whole loop. */
+  showLoopTools: boolean;
+  /** There is a recording, clear or reset to take back. */
+  canUndo: boolean;
+  /** The current loop has something in it. */
+  canClear: boolean;
   /** The current loop differs from the one it shipped with, so Reset has something to do. */
   canReset: boolean;
   onTogglePlay: () => void;
   onToggleRecord: () => void;
   onTempoChange: (bpm: number) => void;
   onSwingChange: (swing: number) => void;
+  onUndo: () => void;
+  onClear: () => void;
   onReset: () => void;
 }
 
 /**
  * The Studio's transport: play and stop, and for the older hands record,
- * tempo, swing and reset. Anything a mode does not show is not rendered at
- * all, so in Play mode this is one big button.
+ * tempo, swing and the loop tools (undo, clear, reset). Anything a mode does
+ * not show is not rendered at all, so in Play mode this is one big button.
  */
 export function TransportBar({
   playing,
@@ -38,12 +45,16 @@ export function TransportBar({
   showRecord,
   showTempo,
   showSwing,
-  showReset,
+  showLoopTools,
+  canUndo,
+  canClear,
   canReset,
   onTogglePlay,
   onToggleRecord,
   onTempoChange,
   onSwingChange,
+  onUndo,
+  onClear,
   onReset,
 }: TransportBarProps) {
   return (
@@ -100,21 +111,65 @@ export function TransportBar({
         </label>
       )}
 
-      {showReset && (
-        <button
-          type="button"
-          className={styles.reset}
-          aria-disabled={!canReset}
-          aria-label="Reset the loop to how it came"
-          onClick={() => {
-            if (canReset) onReset();
-          }}
-        >
-          <span className={styles.mark} aria-hidden="true">
-            <Mark name="reset" />
-          </span>
-        </button>
+      {showLoopTools && (
+        <div className={styles.tools} role="group" aria-label="Loop">
+          <LoopTool
+            mark="undo"
+            name="Undo"
+            label="Undo the last change to the loop"
+            enabled={canUndo}
+            onPress={onUndo}
+          />
+          <LoopTool
+            mark="clear"
+            name="Clear"
+            label="Clear the loop"
+            enabled={canClear}
+            onPress={onClear}
+          />
+          <LoopTool
+            mark="reset"
+            name="Reset"
+            label="Reset the loop to how it came"
+            enabled={canReset}
+            onPress={onReset}
+          />
+        </div>
       )}
+    </div>
+  );
+}
+
+interface LoopToolProps {
+  mark: MarkName;
+  /** Printed above the button, as on hardware. */
+  name: string;
+  label: string;
+  /** With nothing to do the cap stays in place, faded, and does nothing. */
+  enabled: boolean;
+  onPress: () => void;
+}
+
+/** One of the loop tools: a round cap under its printed name. */
+function LoopTool({ mark, name, label, enabled, onPress }: LoopToolProps) {
+  return (
+    <div className={styles.control}>
+      <span className={styles.label} aria-hidden="true">
+        {name}
+      </span>
+      <button
+        type="button"
+        className={styles.tool}
+        aria-disabled={!enabled}
+        aria-label={label}
+        onClick={() => {
+          if (enabled) onPress();
+        }}
+      >
+        <span className={styles.mark} aria-hidden="true">
+          <Mark name={mark} />
+        </span>
+      </button>
     </div>
   );
 }

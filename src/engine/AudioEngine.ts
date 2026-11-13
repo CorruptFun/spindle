@@ -54,7 +54,8 @@ export async function createAudioEngine(
 
   const pads = new PadBank(context);
   pads.output.connect(mixer.padsInput);
-  const sequencer = new Sequencer(context, pads);
+  // The metronome goes through the drums' channel, so it is metered and limited with them.
+  const sequencer = new Sequencer(context, pads, mixer.padsInput);
 
   mixer.output.connect(context.destination);
 

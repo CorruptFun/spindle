@@ -419,3 +419,49 @@ describe('bar lines', () => {
     bars.forEach((time, i) => expect(time).toBeCloseTo(expected[i]!, 9));
   });
 });
+
+describe('beats', () => {
+  interface Beat {
+    time: number;
+    downbeat: boolean;
+  }
+
+  function beatsOf(core: SequencerCore, until: number): Beat[] {
+    const beats: Beat[] = [];
+    for (let t = T0; t < until; t += 0.025) {
+      core.collect(
+        Math.min(t + 0.12, until),
+        () => {},
+        undefined,
+        (time, downbeat) => beats.push({ time, downbeat }),
+      );
+    }
+    return beats;
+  }
+
+  it('reports every beat once, on the grid, and marks the first of each bar', () => {
+    const core = playing(numbered(2), 120);
+    const beat = 4 * stepDurationSec(120);
+    const beats = beatsOf(core, T0 + 8 * beat - 0.001);
+    expect(beats).toHaveLength(8);
+    beats.forEach(({ time, downbeat }, i) => {
+      expect(time).toBeCloseTo(T0 + i * beat, 9);
+      expect(downbeat).toBe(i % 4 === 0);
+    });
+  });
+
+  it('keeps the beat in a loop with nothing in it', () => {
+    const empty: DrumPattern = { bars: 1, lanes: [new Array<number>(STEPS_PER_BAR).fill(0)] };
+    const core = playing(empty, 100);
+    const beat = 4 * stepDurationSec(100);
+    expect(beatsOf(core, T0 + 4 * beat - 0.001)).toHaveLength(4);
+  });
+
+  it('is not moved by swing', () => {
+    const core = playing(numbered(1), 120);
+    core.setSwing(MAX_SWING);
+    const beat = 4 * stepDurationSec(120);
+    const beats = beatsOf(core, T0 + 4 * beat - 0.001);
+    beats.forEach(({ time }, i) => expect(time).toBeCloseTo(T0 + i * beat, 9));
+  });
+});

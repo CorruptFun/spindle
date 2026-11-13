@@ -18,6 +18,13 @@
   gap: var(--space-3);
 }
 
+/* What can be done to the whole loop: undo, clear, reset. */
+.tools {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
 /* A labelled control: hardware label above, control below. */
 .control {
   display: flex;
@@ -66,10 +73,10 @@
   color: var(--chassis);
 }
 
-/* The smaller round buttons: record, minus, plus, reset. */
+/* The smaller round buttons: record, minus, plus, and the loop tools. */
 .record,
 .nudge,
-.reset {
+.tool {
   display: grid;
   flex: none;
   place-items: center;
@@ -95,7 +102,7 @@
 .play:active,
 .record:active,
 .nudge:active,
-.reset:active {
+.tool:active {
   transform: scale(0.94);
 }
 
@@ -115,15 +122,15 @@
   color: var(--chassis);
 }
 
-/* Nothing to reset, or the tempo is at its end: the cap is still there, faded, and does nothing. */
+/* Nothing to undo, clear or reset, or the tempo is at its end: the cap is still there, faded, and does nothing. */
 .nudge[aria-disabled='true'],
-.reset[aria-disabled='true'] {
+.tool[aria-disabled='true'] {
   opacity: 0.4;
   cursor: default;
 }
 
 .nudge[aria-disabled='true']:active,
-.reset[aria-disabled='true']:active {
+.tool[aria-disabled='true']:active {
   transform: none;
 }
 
@@ -222,7 +229,7 @@
   .play:active,
   .record:active,
   .nudge:active,
-  .reset:active {
+  .tool:active {
     transform: none;
   }
 }
@@ -249,6 +256,10 @@
 
   .tempo {
     gap: var(--space-1);
+  }
+
+  .tools {
+    gap: var(--space-2);
   }
 
   .readout {

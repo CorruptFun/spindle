@@ -39,10 +39,13 @@ export function TrackGlyph({ glyph }: TrackGlyphProps) {
 }
 
 /** Interface marks, drawn on the same grid and weight as the track glyphs. */
-export type MarkName = 'add' | 'close' | 'drop' | 'minus' | 'record' | 'reset' | 'start';
+export type MarkName =
+  'add' | 'clear' | 'close' | 'drop' | 'minus' | 'record' | 'reset' | 'start' | 'undo';
 
 const MARKS: Record<MarkName, ReactNode> = {
   add: <path d="M11.5 5h1v14h-1zM5 11.5h14v1H5z" />,
+  // A bin: a lid with its knob, and the can below it.
+  clear: <path d="M5 7h14v1H5zM10 4.5h4v1h-4zM7 10.5h1l.5 8h7l.5-8h1l-.6 9H7.6z" />,
   close: <path d="M11.5 5h1v14h-1zM5 11.5h14v1H5z" transform="rotate(45 12 12)" />,
   drop: <path d="M11.5 3.5h1v7h-1zM7.5 10.5h9L12 15zM4 15.5h1V19h14v-3.5h1V20H4z" />,
   minus: <path d="M5 11.5h14v1H5z" />,
@@ -51,9 +54,11 @@ const MARKS: Record<MarkName, ReactNode> = {
   // Three quarters of a turn, running back towards the start, with its arrowhead at the top.
   reset: <path d="M12 4.5A7.5 7.5 0 1 1 4.5 12h1A6.5 6.5 0 1 0 12 5.5ZM8.5 5 12.5 2v6Z" />,
   start: <path d="M5 5.5h1v13H5zM19 5.5v13L9 12z" />,
+  // A hook that turns back on itself, its arrowhead pointing the way it came.
+  undo: <path d="M7 8.5h7.5a5 5 0 0 1 0 10H9v-1h5.5a4 4 0 0 0 0-8H7zM3.5 9 8 5.5v7z" />,
 };
 
-/** A small drawn mark (add, minus, close, drop, record, reset, back to start). Always next to a word or inside a named control. */
+/** A small drawn mark (add, minus, close, drop, record, reset, undo, clear, back to start). Always next to a word or inside a named control. */
 export function Mark({ name }: { name: MarkName }) {
   return (
     <svg className={styles.glyph} viewBox="0 0 24 24" aria-hidden="true">

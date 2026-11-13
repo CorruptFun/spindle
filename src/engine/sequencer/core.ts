@@ -19,7 +19,7 @@
  * place in the loop and its place in the bar always agree.
  */
 import { clamp } from '@/lib/audio-math';
-import { MAX_BPM, MAX_SWING, MIN_BPM, STEPS_PER_BAR, patternSteps } from './types';
+import { MAX_BPM, MAX_SWING, MIN_BPM, STEPS_PER_BAR, STEPS_PER_BEAT, patternSteps } from './types';
 import type { DrumPattern } from './types';
 
 export const DEFAULT_BPM = 100;
@@ -31,6 +31,8 @@ const MAX_STEPS_PER_COLLECT = 4096;
 export type HitSink = (pad: number, velocity: number, time: number) => void;
 /** Receives the time of a bar line as it is collected. */
 export type BarSink = (time: number) => void;
+/** Receives the time of every beat, and whether it is the first of its bar. Swing never moves a beat. */
+export type BeatSink = (time: number, downbeat: boolean) => void;
 
 export function stepDurationSec(bpm: number): number {
   return 60 / bpm / 4;
@@ -221,9 +223,9 @@ export class SequencerCore {
 
   /**
    * Hand out every hit that sounds before `untilTime`, in time order, and every
-   * bar line among them. Each step is handed out exactly once.
+   * bar line and beat among them. Each step is handed out exactly once.
    */
-  collect(untilTime: number, emit: HitSink, bar?: BarSink): void {
+  collect(untilTime: number, emit: HitSink, bar?: BarSink, beat?: BeatSink): void {
     if (!this.playingValue || !Number.isFinite(untilTime)) return;
     for (let guard = 0; guard < MAX_STEPS_PER_COLLECT; guard += 1) {
       const step = this.nextStep;
@@ -241,6 +243,7 @@ export class SequencerCore {
         }
         bar?.(grid);
       }
+      if (beat && step % STEPS_PER_BEAT === 0) beat(grid, step % STEPS_PER_BAR === 0);
 
       const index = mod(step - this.loop.base, this.loop.length);
       const lanes = this.current.lanes;

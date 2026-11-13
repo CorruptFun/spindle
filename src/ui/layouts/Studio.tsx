@@ -3,8 +3,8 @@ import type { ModeDefinition } from '@/config/modes';
 import { STUDIO_MODES } from '@/config/studio';
 import { STEPS_PER_BAR } from '@/engine/sequencer/types';
 import { useBooth } from '@/state/booth';
-import { isLoopEdited, useStudio } from '@/state/studio';
-import { FACTORY_LOOPS, KITS } from '@/studio';
+import { canUndoLoop, isLoopEdited, useStudio } from '@/state/studio';
+import { FACTORY_LOOPS, isEmptyPattern, KITS } from '@/studio';
 import { LevelMeter } from '@/ui/components/LevelMeter';
 import { KitPicker } from '@/ui/studio/KitPicker';
 import { LoopSlots } from '@/ui/studio/LoopSlots';
@@ -26,6 +26,7 @@ export function Studio({ mode }: { mode: ModeDefinition }) {
   const queuedSlot = useStudio((state) => state.queuedSlot);
   const selectedPad = useStudio((state) => state.selectedPad);
   const bar = useStudio((state) => state.bar);
+  const undo = useStudio((state) => state.undo);
 
   const hitPad = useStudio((state) => state.hitPad);
   const togglePlay = useStudio((state) => state.togglePlay);
@@ -37,6 +38,8 @@ export function Studio({ mode }: { mode: ModeDefinition }) {
   const setSwing = useStudio((state) => state.setSwing);
   const pickKit = useStudio((state) => state.pickKit);
   const resetLoop = useStudio((state) => state.resetLoop);
+  const clearLoop = useStudio((state) => state.clearLoop);
+  const undoLoop = useStudio((state) => state.undoLoop);
   const stopRecording = useStudio((state) => state.stopRecording);
 
   // Recording must never stay on in a mode that shows no record button.
@@ -134,12 +137,16 @@ export function Studio({ mode }: { mode: ModeDefinition }) {
           showRecord={features.record}
           showTempo={features.tempo}
           showSwing={features.swing}
-          showReset={features.stepEditor}
+          showLoopTools={features.stepEditor}
+          canUndo={canUndoLoop(undo, project)}
+          canClear={!isEmptyPattern(pattern)}
           canReset={isLoopEdited(project, project.activeSlot)}
           onTogglePlay={togglePlay}
           onToggleRecord={toggleRecord}
           onTempoChange={setTempo}
           onSwingChange={setSwing}
+          onUndo={undoLoop}
+          onClear={clearLoop}
           onReset={resetLoop}
         />
         <div className={styles.meter}>

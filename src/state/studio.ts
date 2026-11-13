@@ -4,7 +4,9 @@ import type { AudioEngine } from '@/engine/AudioEngine';
 import { STEPS_PER_BAR, type DrumPattern } from '@/engine/sequencer/types';
 import {
   defaultProject,
+  emptyPattern,
   FACTORY_LOOPS,
+  isEmptyPattern,
   KITS,
   parseProject,
   patternsEqual,
@@ -54,6 +56,12 @@ function saveNow(project: StudioProject): void {
   }
 }
 
+/** A loop as it was at some moment, and which slot it belongs to. */
+export interface LoopSnapshot {
+  slot: number;
+  pattern: DrumPattern;
+}
+
 interface StudioState {
   /** The beat: kit, tempo, swing and the eight loops. Kept on the device between visits. */
   project: StudioProject;
@@ -67,6 +75,11 @@ interface StudioState {
   selectedPad: number;
   /** Which bar of the loop the step editor shows. */
   bar: number;
+  /**
+   * A loop as it was before the last recording, clear or reset, for Undo.
+   * Undoing swaps it with the loop as it is, so a second Undo puts the change back.
+   */
+  undo: LoopSnapshot | null;
 
   /** Connect to the audio engine once it exists: load the kit and hand over the beat. */
   attach: (engine: AudioEngine) => void;
@@ -86,9 +99,18 @@ interface StudioState {
   pickKit: (kitId: string) => void;
   /** Put the current loop back the way it shipped. */
   resetLoop: () => void;
+  /** Empty the current loop, to build one from nothing. */
+  clearLoop: () => void;
+  /** Take back the last recording, clear or reset of the current loop; again to put it back. */
+  undoLoop: () => void;
 }
 
 let engine: AudioEngine | null = null;
+/**
+ * The slot whose loop has already been kept for Undo during the recording in
+ * progress. One recording is one thing to undo, however many hits it has.
+ */
+let takeSlot: number | null = null;
 
 /**
  * The Studio at human speed. The sequencer in the engine keeps the beat; this
@@ -120,6 +142,23 @@ export const useStudio = create<StudioState>()((set, get) => {
     if (queued) engine?.sequencer.setPattern(queued, 'next-bar');
   };
 
+  /** Replace the whole loop in the active slot, keeping what was there for Undo. */
+  const wipe = (pattern: DrumPattern): void => {
+    const { project } = get();
+    const slot = project.activeSlot;
+    set({ undo: { slot, pattern: activePattern(project) } });
+    // Hits recorded after this belong with it: one Undo brings back the loop as it was before.
+    takeSlot = get().recording ? slot : null;
+    replaceActiveLoop(pattern);
+  };
+
+  /** Recording on or off. The click runs with it: an empty loop gives nothing to play along to. */
+  const setRecording = (recording: boolean): void => {
+    takeSlot = null;
+    engine?.sequencer.setClick(recording);
+    if (get().recording !== recording) set({ recording });
+  };
+
   const loadKit = (kitId: string): void => {
     if (!engine) return;
     const kit = KITS.some((known) => known.id === kitId) ? kitId : KITS[0]!.id;
@@ -137,6 +176,7 @@ export const useStudio = create<StudioState>()((set, get) => {
     queuedSlot: null,
     selectedPad: 0,
     bar: 0,
+    undo: null,
 
     attach(nextEngine) {
       if (engine === nextEngine) return;
@@ -147,6 +187,7 @@ export const useStudio = create<StudioState>()((set, get) => {
       engine.sequencer.setTempo(project.bpm);
       engine.sequencer.setSwing(project.swing);
       engine.sequencer.setPattern(activePattern(project), 'now');
+      engine.sequencer.setClick(get().recording);
       // A queued loop becomes the current one when its bar line arrives.
       engine.sequencer.onBar = () => {
         const { queuedSlot } = get();
@@ -171,10 +212,15 @@ export const useStudio = create<StudioState>()((set, get) => {
       const recorded = engine.sequencer.recordHit(pad, RECORDED_VELOCITY);
       if (recorded) {
         const { project } = get();
+        const slot = project.activeSlot;
+        const before = project.slots[slot];
+        // The first hit of a recording: keep the loop as it was, so Undo takes the whole recording back.
+        if (takeSlot !== slot && before) {
+          takeSlot = slot;
+          set({ undo: { slot, pattern: before } });
+        }
         update({
-          slots: project.slots.map((slot, index) =>
-            index === project.activeSlot ? recorded : slot,
-          ),
+          slots: project.slots.map((kept, index) => (index === slot ? recorded : kept)),
         });
       }
     },
@@ -193,15 +239,19 @@ export const useStudio = create<StudioState>()((set, get) => {
 
     stop() {
       engine?.sequencer.stop();
-      set({ playing: false, recording: false, queuedSlot: null });
+      setRecording(false);
+      set({ playing: false, queuedSlot: null });
     },
 
     toggleRecord() {
-      set((state) => ({ recording: !state.recording }));
+      const recording = !get().recording;
+      setRecording(recording);
+      // Nothing can be recorded into a loop that is not running, so Record starts it.
+      if (recording && !get().playing) get().togglePlay();
     },
 
     stopRecording() {
-      if (get().recording) set({ recording: false });
+      if (get().recording) setRecording(false);
     },
 
     selectSlot(slot) {
@@ -255,11 +305,31 @@ export const useStudio = create<StudioState>()((set, get) => {
     },
 
     resetLoop() {
-      const factory = FACTORY_LOOPS[get().project.activeSlot];
-      if (factory) replaceActiveLoop(factory.pattern);
+      const { project } = get();
+      const factory = FACTORY_LOOPS[project.activeSlot];
+      if (factory && isLoopEdited(project, project.activeSlot)) wipe(factory.pattern);
+    },
+
+    clearLoop() {
+      const current = activePattern(get().project);
+      if (!isEmptyPattern(current)) wipe(emptyPattern(current.bars));
+    },
+
+    undoLoop() {
+      const { undo, project } = get();
+      if (!undo || undo.slot !== project.activeSlot) return;
+      set({ undo: { slot: undo.slot, pattern: activePattern(project) } });
+      // Whatever is recorded next is a new recording, with its own Undo.
+      takeSlot = null;
+      replaceActiveLoop(undo.pattern);
     },
   };
 });
+
+/** Whether Undo has something to take back in the loop on screen. */
+export function canUndoLoop(undo: LoopSnapshot | null, project: StudioProject): boolean {
+  return undo !== null && undo.slot === project.activeSlot;
+}
 
 /** Whether a slot's loop has been changed from the one it shipped with. */
 export function isLoopEdited(project: StudioProject, slot: number): boolean {

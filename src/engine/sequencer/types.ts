@@ -1,5 +1,6 @@
 /** Sixteen steps to the bar: four beats, each cut in four. */
 export const STEPS_PER_BAR = 16;
+export const STEPS_PER_BEAT = 4;
 
 export const MIN_BPM = 60;
 export const MAX_BPM = 180;
@@ -59,6 +60,12 @@ export interface SequencerControl {
    * pattern, or null when the sequencer is stopped.
    */
   recordHit(pad: number, velocity: number): DrumPattern | null;
+
+  /**
+   * A click on every beat while playing, higher on the first beat of the bar.
+   * Something to play along to while recording: an empty loop gives no beat.
+   */
+  setClick(on: boolean): void;
 
   /**
    * Where the playhead is, in steps: 0 up to (not including) the pattern's

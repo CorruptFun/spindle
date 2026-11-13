@@ -158,6 +158,9 @@ host. The aim is a drum machine that grows into a small, friendly studio.
   changing never falls out of time.
 - Make them yours: record your own hits into a loop as it plays, or edit one pad's steps at a
   time on sixteen step buttons. Reset brings the original back.
+- Start from nothing: Clear empties a loop, Record starts it running with a click on every beat,
+  and each recording adds to what is there. Undo takes back the last recording, clear or reset
+  as one step, so a layer that did not work never costs the beat underneath it.
 - Tempo, and swing in Pro. The beat is kept on the device between visits.
 
 **Done when** a child can make a beat they are proud of with no instructions.

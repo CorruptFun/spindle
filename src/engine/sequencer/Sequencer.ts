@@ -1,5 +1,6 @@
 import type { PadBankControl } from '../sampler/types';
 import { PAD_COUNT } from '../sampler/types';
+import { Click } from './click';
 import { SequencerCore } from './core';
 import { STEPS_PER_BAR } from './types';
 import type { DrumPattern, SequencerControl } from './types';
@@ -38,6 +39,9 @@ export class Sequencer implements SequencerControl {
   private readonly context: BaseAudioContext;
   private readonly pads: PadBankControl;
   private readonly core: SequencerCore;
+  /** The metronome, when there is somewhere to send it. */
+  private readonly click: Click | null;
+  private clickOn = false;
 
   private timer: ReturnType<typeof setInterval> | null = null;
   private readonly barTimers = new Set<ReturnType<typeof setTimeout>>();
@@ -59,8 +63,17 @@ export class Sequencer implements SequencerControl {
     this.barTimers.add(id);
   };
 
+  private readonly emitBeat = (time: number, downbeat: boolean): void => {
+    if (this.clickOn) this.click?.at(time, downbeat);
+  };
+
   private readonly tick = (): void => {
-    this.core.collect(this.context.currentTime + this.lookahead, this.emitHit, this.emitBar);
+    this.core.collect(
+      this.context.currentTime + this.lookahead,
+      this.emitHit,
+      this.emitBar,
+      this.emitBeat,
+    );
   };
 
   private readonly onVisibility = (): void => {
@@ -72,9 +85,11 @@ export class Sequencer implements SequencerControl {
     if (this.core.playing) this.tick();
   };
 
-  constructor(context: BaseAudioContext, pads: PadBankControl) {
+  /** `clickOutput` is where the metronome is heard; without it there is no click. */
+  constructor(context: BaseAudioContext, pads: PadBankControl, clickOutput?: AudioNode) {
     this.context = context;
     this.pads = pads;
+    this.click = clickOutput ? new Click(context, clickOutput) : null;
     this.core = new SequencerCore(emptyPattern());
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', this.onVisibility);
@@ -104,7 +119,10 @@ export class Sequencer implements SequencerControl {
 
   start(): void {
     // Restarting while playing: drop what was already scheduled from the old pass.
-    if (this.core.playing) this.pads.silence();
+    if (this.core.playing) {
+      this.pads.silence();
+      this.click?.silence();
+    }
     this.halt();
     this.announcedBar = -Infinity;
     this.core.start(this.context.currentTime + START_DELAY_SEC);
@@ -116,6 +134,7 @@ export class Sequencer implements SequencerControl {
     this.halt();
     this.core.stop();
     this.pads.silence();
+    this.click?.silence();
   }
 
   setTempo(bpm: number): void {
@@ -128,6 +147,12 @@ export class Sequencer implements SequencerControl {
 
   setPattern(pattern: DrumPattern, when: 'now' | 'next-bar' = 'now'): void {
     this.core.setPattern(pattern, when);
+  }
+
+  setClick(on: boolean): void {
+    this.clickOn = on;
+    // Off means off now, not after the clicks already scheduled a moment ahead.
+    if (!on) this.click?.silence();
   }
 
   recordHit(pad: number, velocity: number): DrumPattern | null {

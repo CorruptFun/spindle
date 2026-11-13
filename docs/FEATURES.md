@@ -72,23 +72,25 @@ the same abilities are reachable at three skill levels. This is the checklist th
 
 ## Studio
 
-| Capability                                 | Play | Mix | Pro | Stage | Notes                                         |
-| ------------------------------------------ | :--: | :-: | :-: | :---: | --------------------------------------------- |
-| Eight drum pads                            |  ●   |  ●  |  ●  |  S1   | Several at once; colour marks the drum family |
-| Three synthesised kits                     |  ●   |  ●  |  ●  |  S1   | Nothing downloaded or licensed                |
-| Eight ready-made loops, swapped on the bar |  ●   |  ●  |  ●  |  S1   |                                               |
-| Record your hits into a loop               |  –   |  ●  |  ●  |  S1   | Snapped to the nearest step                   |
-| Step editor                                |  –   |  ●  |  ●  |  S1   | One pad at a time, sixteen steps              |
-| Tempo                                      |  –   |  ●  |  ●  |  S1   |                                               |
-| Swing                                      |  –   |  –  |  ●  |  S1   |                                               |
-| Beat kept on the device                    |  ●   |  ●  |  ●  |  S1   |                                               |
-| Bass, keys and lead instruments            |  ◐   |  ●  |  ●  |  S2   | Play: a keyboard that cannot hit a wrong note |
-| Note editor                                |  –   |  ●  |  ●  |  S2   |                                               |
-| Arrange loops into a song                  |  ◐   |  ●  |  ●  |  S3   |                                               |
-| Mixer and effects per sound                |  –   |  ◐  |  ●  |  S3   |                                               |
-| Record voice or instrument                 |  –   |  ●  |  ●  |  S4   | Needs the microphone, asked for when used     |
-| Your own sounds on the pads                |  –   |  ●  |  ●  |  S4   |                                               |
-| Save as an audio file, save projects       |  ●   |  ●  |  ●  |  S5   |                                               |
+| Capability                                 | Play | Mix | Pro | Stage | Notes                                               |
+| ------------------------------------------ | :--: | :-: | :-: | :---: | --------------------------------------------------- |
+| Eight drum pads                            |  ●   |  ●  |  ●  |  S1   | Several at once; colour marks the drum family       |
+| Three synthesised kits                     |  ●   |  ●  |  ●  |  S1   | Nothing downloaded or licensed                      |
+| Eight ready-made loops, swapped on the bar |  ●   |  ●  |  ●  |  S1   |                                                     |
+| Record your hits into a loop               |  –   |  ●  |  ●  |  S1   | Snapped to the nearest step; a click keeps the beat |
+| Clear a loop to build your own             |  –   |  ●  |  ●  |  S1   | Reset brings the ready-made loop back               |
+| Undo a recording, clear or reset           |  –   |  ●  |  ●  |  S1   | A second Undo puts it back                          |
+| Step editor                                |  –   |  ●  |  ●  |  S1   | One pad at a time, sixteen steps                    |
+| Tempo                                      |  –   |  ●  |  ●  |  S1   |                                                     |
+| Swing                                      |  –   |  –  |  ●  |  S1   |                                                     |
+| Beat kept on the device                    |  ●   |  ●  |  ●  |  S1   |                                                     |
+| Bass, keys and lead instruments            |  ◐   |  ●  |  ●  |  S2   | Play: a keyboard that cannot hit a wrong note       |
+| Note editor                                |  –   |  ●  |  ●  |  S2   |                                                     |
+| Arrange loops into a song                  |  ◐   |  ●  |  ●  |  S3   |                                                     |
+| Mixer and effects per sound                |  –   |  ◐  |  ●  |  S3   |                                                     |
+| Record voice or instrument                 |  –   |  ●  |  ●  |  S4   | Needs the microphone, asked for when used           |
+| Your own sounds on the pads                |  –   |  ●  |  ●  |  S4   |                                                     |
+| Save as an audio file, save projects       |  ●   |  ●  |  ●  |  S5   |                                                     |
 
 ## Not planned
 

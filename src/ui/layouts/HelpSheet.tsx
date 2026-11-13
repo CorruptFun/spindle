@@ -58,6 +58,12 @@ const STEPS = (
     <path d="M21 9v6" {...stroke} />
   </>
 );
+const CLEAR = (
+  <>
+    <path d="M5 7.5h14M10 4.5h4" {...stroke} />
+    <path d="M7.5 10.5l.6 8.5h7.8l.6-8.5" {...stroke} />
+  </>
+);
 const LEVELS = (
   <>
     <rect x="4" y="14" width="4" height="6" rx="1" fill="currentColor" />
@@ -84,12 +90,17 @@ const TIPS: Readonly<Record<Workspace, readonly Tip[]>> = {
     { mark: PLAY, text: 'Press play to start a loop, then pick another. It changes on the beat.' },
     {
       mark: DOT,
-      text: 'Press record and play the pads to add your own hits.',
+      text: 'Press record and play the pads to add your own hits. A click keeps the beat.',
       beyondPlay: true,
     },
     {
       mark: STEPS,
       text: 'Tap a pad, then the step buttons, to change its rhythm.',
+      beyondPlay: true,
+    },
+    {
+      mark: CLEAR,
+      text: 'Clear empties a loop so you can build your own. Undo takes the last change back.',
       beyondPlay: true,
     },
     { mark: LOOP, text: 'The shapes at the top change the drum kit.' },
