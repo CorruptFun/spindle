@@ -147,44 +147,46 @@ export function PadGrid({ pads, readGlow, onHit, running, selected, showNames }:
   };
 
   return (
-    <div className={styles.grid} role="group" aria-label="Drum pads">
-      {pads.map((pad, index) => (
-        <button
-          key={index}
-          ref={(element) => {
-            cells.current[index] = element;
-          }}
-          type="button"
-          className={styles.cell}
-          style={familyStyle(pad.family)}
-          data-selected={selected === index}
-          aria-label={pad.name}
-          aria-current={selected === index ? 'true' : undefined}
-          onPointerDown={(event) => onPointerDown(index, event)}
-          onPointerUp={(event) => onPointerEnd(index, event)}
-          onPointerCancel={(event) => onPointerEnd(index, event)}
-          onLostPointerCapture={(event) => onPointerEnd(index, event)}
-          onKeyDown={(event) => onKeyDown(index, event)}
-          onKeyUp={(event) => onKeyUp(index, event)}
-          onBlur={() => lift(index, 'key')}
-          onClick={(event) => onClick(index, event)}
-          onContextMenu={(event) => event.preventDefault()}
-        >
-          <span className={styles.pad} aria-hidden="true">
-            <span
-              ref={(element) => {
-                lights.current[index] = element;
-              }}
-              className={styles.light}
-            />
-          </span>
-          {showNames && (
-            <span className={styles.name} aria-hidden="true">
-              {pad.name}
+    <div className={styles.frame}>
+      <div className={styles.grid} role="group" aria-label="Drum pads">
+        {pads.map((pad, index) => (
+          <button
+            key={index}
+            ref={(element) => {
+              cells.current[index] = element;
+            }}
+            type="button"
+            className={styles.cell}
+            style={familyStyle(pad.family)}
+            data-selected={selected === index}
+            aria-label={pad.name}
+            aria-current={selected === index ? 'true' : undefined}
+            onPointerDown={(event) => onPointerDown(index, event)}
+            onPointerUp={(event) => onPointerEnd(index, event)}
+            onPointerCancel={(event) => onPointerEnd(index, event)}
+            onLostPointerCapture={(event) => onPointerEnd(index, event)}
+            onKeyDown={(event) => onKeyDown(index, event)}
+            onKeyUp={(event) => onKeyUp(index, event)}
+            onBlur={() => lift(index, 'key')}
+            onClick={(event) => onClick(index, event)}
+            onContextMenu={(event) => event.preventDefault()}
+          >
+            <span className={styles.pad} aria-hidden="true">
+              <span
+                ref={(element) => {
+                  lights.current[index] = element;
+                }}
+                className={styles.light}
+              />
             </span>
-          )}
-        </button>
-      ))}
+            {showNames && (
+              <span className={styles.name} aria-hidden="true">
+                {pad.name}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

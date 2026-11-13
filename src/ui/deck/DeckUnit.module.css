@@ -1,3 +1,4 @@
+/* One deck: its strip on top, its transport below, and the record taking all the room between. */
 .unit {
   --presence: 1;
   position: relative;
@@ -5,21 +6,39 @@
   flex: 1 1 0;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-3);
   width: 100%;
   min-width: 0;
+  min-height: 0;
 }
 
-/* Room for the colour ring that sits just outside the record. */
-.platter {
+/* The whole track at a glance, and a place to tap to jump around in it. */
+.wave {
+  /* A room can switch this off where there is no height to spare. */
+  display: var(--wave-display, block);
+  flex: none;
   width: 100%;
-  max-width: var(--platter-max);
-  padding: 10px;
+  height: var(--touch-min);
+}
+
+/*
+ * The space the record lives in. It is measured, so the record can be exactly
+ * as large as fits both ways: a tall narrow deck and a short wide one each get
+ * the biggest round record they can hold.
+ */
+.platter {
+  display: grid;
+  flex: 1 1 0;
+  place-items: center;
+  width: 100%;
+  min-height: 0;
+  container-type: size;
 }
 
 /* Back-to-start sits to the left of play, as cue does on a real deck. */
 .transport {
   display: flex;
+  flex: none;
   align-items: center;
   justify-content: center;
   gap: var(--space-3);
@@ -56,7 +75,7 @@
  */
 .dropTarget {
   position: absolute;
-  inset: calc(-1 * var(--space-2));
+  inset: calc(-1 * var(--space-1));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -72,10 +91,4 @@
   width: var(--space-7);
   height: var(--space-7);
   color: var(--deck);
-}
-
-.dropWord {
-  color: var(--ink);
-  font-size: var(--text-m);
-  font-weight: 650;
 }

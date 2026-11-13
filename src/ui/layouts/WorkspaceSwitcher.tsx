@@ -22,7 +22,7 @@ export function WorkspaceSwitcher() {
           onClick={() => setWorkspace(id)}
         >
           <WorkspaceMark workspace={id} />
-          {name}
+          <span className={styles.word}>{name}</span>
         </button>
       ))}
     </div>

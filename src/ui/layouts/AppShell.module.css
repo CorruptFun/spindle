@@ -76,6 +76,9 @@
   max-width: 1280px;
   margin: 0 auto;
   padding: var(--space-2);
+  /* Only on a screen too small to hold the room; a tablet never scrolls. */
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 @media (min-width: 720px) {

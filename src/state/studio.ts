@@ -17,6 +17,8 @@ import {
 const STORAGE_KEY = `${BRAND.storagePrefix}.studio.v1`;
 /** Wait for a pause in the edits before writing the beat to the device. */
 const SAVE_DELAY_MS = 400;
+/** Where the drums sit in the mix. A busy loop at full level peaks above full scale and would lean on the limiter. */
+const PADS_LEVEL = 0.85;
 /** How hard a recorded hit lands in the loop. */
 const RECORDED_VELOCITY = 0.9;
 
@@ -42,6 +44,16 @@ function saveSoon(project: StudioProject): void {
   }, SAVE_DELAY_MS);
 }
 
+/** Write the beat now, without waiting. */
+function saveNow(project: StudioProject): void {
+  clearTimeout(saveTimer);
+  try {
+    localStorage.setItem(STORAGE_KEY, serializeProject(project));
+  } catch {
+    // Nothing to do: see loadProject.
+  }
+}
+
 interface StudioState {
   /** The beat: kit, tempo, swing and the eight loops. Kept on the device between visits. */
   project: StudioProject;
@@ -63,6 +75,8 @@ interface StudioState {
   /** Stop the loop. Used when the Studio leaves the screen. */
   stop: () => void;
   toggleRecord: () => void;
+  /** Recording off. Used when the record button leaves the screen. */
+  stopRecording: () => void;
   selectSlot: (slot: number) => void;
   /** Toggle a step of the selected pad in the bar being shown. */
   toggleStep: (step: number) => void;
@@ -100,6 +114,10 @@ export const useStudio = create<StudioState>()((set, get) => {
     );
     update({ slots });
     engine?.sequencer.setPattern(pattern, 'now');
+    // Applying an edit drops any change that was waiting for the bar line: queue it again.
+    const { queuedSlot } = get();
+    const queued = queuedSlot === null ? undefined : slots[queuedSlot];
+    if (queued) engine?.sequencer.setPattern(queued, 'next-bar');
   };
 
   const loadKit = (kitId: string): void => {
@@ -125,6 +143,7 @@ export const useStudio = create<StudioState>()((set, get) => {
       engine = nextEngine;
       const { project } = get();
 
+      engine.mixer.setPadsLevel(PADS_LEVEL);
       engine.sequencer.setTempo(project.bpm);
       engine.sequencer.setSwing(project.swing);
       engine.sequencer.setPattern(activePattern(project), 'now');
@@ -144,8 +163,11 @@ export const useStudio = create<StudioState>()((set, get) => {
       engine.pads.trigger(pad);
       set({ selectedPad: pad });
 
-      const { recording, playing } = get();
-      if (!recording || !playing) return;
+      const { recording, playing, queuedSlot } = get();
+      // While a loop change is waiting, the sequencer may already be on the new loop while
+      // this store still points at the old one. A hit then would be written into the wrong
+      // loop, so it is played but not recorded.
+      if (!recording || !playing || queuedSlot !== null) return;
       const recorded = engine.sequencer.recordHit(pad, RECORDED_VELOCITY);
       if (recorded) {
         const { project } = get();
@@ -176,6 +198,10 @@ export const useStudio = create<StudioState>()((set, get) => {
 
     toggleRecord() {
       set((state) => ({ recording: !state.recording }));
+    },
+
+    stopRecording() {
+      if (get().recording) set({ recording: false });
     },
 
     selectSlot(slot) {
@@ -240,4 +266,18 @@ export function isLoopEdited(project: StudioProject, slot: number): boolean {
   const factory = FACTORY_LOOPS[slot];
   const current = project.slots[slot];
   return !factory || !current || !patternsEqual(factory.pattern, current);
+}
+
+// An app on a tablet is put away, not closed: keep the last edit when that happens.
+if (typeof window !== 'undefined') {
+  const keep = () => saveNow(useStudio.getState().project);
+  window.addEventListener('pagehide', keep);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') keep();
+  });
+}
+
+// Development only: reach the live Studio from the browser console as `__studio`.
+if (import.meta.env.DEV) {
+  Object.assign(globalThis, { __studio: useStudio });
 }

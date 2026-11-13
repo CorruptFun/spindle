@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { computePeaks, type WaveformPeaks } from '@/analysis/peaks';
 import { createAudioEngine, type AudioEngine } from '@/engine/AudioEngine';
 import { DECK_IDS, type DeckId } from '@/engine/core/types';
 import { clamp } from '@/lib/audio-math';
@@ -53,6 +54,8 @@ interface BoothState {
   playing: PerDeck<boolean>;
   /** What is on each deck. */
   tracks: PerDeck<TrackMeta | null>;
+  /** The shape of each deck's track, for its waveform. */
+  peaks: PerDeck<WaveformPeaks | null>;
   /** The track each deck is busy loading, if any. */
   loading: PerDeck<TrackRef | null>;
   /** 0 = bottom, 1 = top. */
@@ -73,6 +76,8 @@ interface BoothState {
   wake: () => void;
   togglePlay: (deck: DeckId) => void;
   backToStart: (deck: DeckId) => void;
+  /** Move a deck's needle to a place in its track. */
+  seek: (deck: DeckId, positionSec: number) => void;
   /**
    * Match the booth to what a skill mode shows: decks that are not on screen stop, and when
    * the channel faders are hidden they go back to full, so nothing plays or stays silent
@@ -103,7 +108,7 @@ let booting: Promise<void> | null = null;
  * Anything that changes every frame is read from the engine directly.
  */
 export const useBooth = create<BoothState>()((set, get) => {
-  const setDeck = <K extends 'playing' | 'tracks' | 'loading' | 'channelFaders'>(
+  const setDeck = <K extends 'playing' | 'tracks' | 'peaks' | 'loading' | 'channelFaders'>(
     key: K,
     deck: DeckId,
     value: BoothState[K][DeckId],
@@ -123,7 +128,10 @@ export const useBooth = create<BoothState>()((set, get) => {
     try {
       const track = await produce(engine);
       if (!sameTrack(get().loading[deck], ref)) return; // a newer choice took over
+      // Drawn from the samples, so it has to be worked out before the deck takes them away.
+      const peaks = computePeaks(track.audio);
       engine.deck(deck).load(track.audio, { loop: track.loop });
+      setDeck('peaks', deck, peaks);
       setDeck('tracks', deck, track.meta);
       setDeck('loading', deck, null);
       if (get().pickerDeck === deck) set({ pickerDeck: null });
@@ -159,6 +167,7 @@ export const useBooth = create<BoothState>()((set, get) => {
     engineFailed: false,
     playing: perDeck(false),
     tracks: perDeck<TrackMeta | null>(null),
+    peaks: perDeck<WaveformPeaks | null>(null),
     loading: perDeck<TrackRef | null>(null),
     channelFaders: perDeck(1),
     crossfader: 0.5,
@@ -217,6 +226,10 @@ export const useBooth = create<BoothState>()((set, get) => {
 
     backToStart(deck) {
       get().engine?.deck(deck).seek(0);
+    },
+
+    seek(deck, positionSec) {
+      get().engine?.deck(deck).seek(positionSec);
     },
 
     fitToMode(deckCount, showsChannelFaders) {

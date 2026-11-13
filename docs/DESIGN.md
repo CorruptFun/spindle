@@ -30,7 +30,11 @@ first.
 6. **Honest screens.** No control that does nothing. No meter that is not measuring. No
    placeholder numbers. If a thing is not built, the screen says so plainly or leaves it out.
 
-7. **The instrument is the screen.** No headlines, explanations or plans on it, and as few
+7. **It fits the screen.** The app is exactly the size of the device and does not scroll. Each
+   room fits itself into the space: records and pads grow to fill a tablet and shrink for a
+   phone. Anything that can be tapped looks like a button: raised, and it goes down.
+
+8. **The instrument is the screen.** No headlines, explanations or plans on it, and as few
    words as possible. Whatever needs explaining lives behind the ? button, in the guide.
 
 ## Tokens

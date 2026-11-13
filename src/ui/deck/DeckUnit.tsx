@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import type { DragEvent } from 'react';
 import type { DeckId } from '@/engine/core/types';
+import type { WaveformPeaks } from '@/analysis/peaks';
 import type { DeckControl } from '@/engine/deck/types';
 import type { TrackMeta } from '@/sources/types';
 import { Mark } from '@/ui/components/TrackGlyph';
@@ -9,6 +10,7 @@ import { deckStyle } from '@/ui/theme/deck-colors';
 import styles from './DeckUnit.module.css';
 import { Platter } from './Platter';
 import { TrackStrip } from './TrackStrip';
+import { Waveform } from './Waveform';
 
 interface DeckUnitProps {
   deck: DeckId;
@@ -22,6 +24,10 @@ interface DeckUnitProps {
   /** Return the needle to the start. Leave it out when that is not possible: the button is then not shown. */
   onBackToStart?: () => void;
   onChooseTrack: () => void;
+  /** The shape of the loaded track, for the waveform. */
+  peaks: WaveformPeaks | null;
+  /** Jump to a place in the track. */
+  onSeek: (positionSec: number) => void;
   /** Something was dropped on the deck (the integrator filters for audio files). */
   onDropData?: (data: DataTransfer) => void;
 }
@@ -41,6 +47,8 @@ export function DeckUnit({
   onTogglePlay,
   onBackToStart,
   onChooseTrack,
+  peaks,
+  onSeek,
   onDropData,
 }: DeckUnitProps) {
   const [dragOver, setDragOver] = useState(false);
@@ -100,6 +108,17 @@ export function DeckUnit({
         onChoose={onChooseTrack}
       />
 
+      <div className={styles.wave}>
+        <Waveform
+          peaks={hasTrack ? peaks : null}
+          readPositionSec={hasTrack ? readPositionSec : null}
+          isMoving={hasTrack ? isMoving : null}
+          playing={playing}
+          onSeek={onSeek}
+          label={`Deck ${deck} position`}
+        />
+      </div>
+
       <div className={styles.platter}>
         <Platter deck={deck} control={control} playing={playing} />
       </div>
@@ -125,7 +144,6 @@ export function DeckUnit({
           <span className={styles.dropMark}>
             <Mark name="drop" />
           </span>
-          <span className={styles.dropWord}>Drop</span>
         </div>
       )}
     </section>

@@ -1,12 +1,23 @@
 .platter {
+  /* Room for the colour ring that sits just outside the record. */
+  --ring-room: 11px;
   position: relative;
-  width: 100%;
+  /* For browsers that cannot measure the deck's space: sized from the window instead. */
+  width: min(100% - 2 * var(--ring-room), var(--platter-max, 320px));
+  max-width: 440px;
   aspect-ratio: 1;
   border-radius: 50%;
   cursor: grab;
   /* The whole surface is a gesture: no scrolling, no long-press menu. */
   touch-action: none;
   -webkit-touch-callout: none;
+}
+
+/* The biggest round record that fits the deck's space both ways. */
+@supports (width: 1cqh) {
+  .platter {
+    width: calc(min(100cqw, 100cqh) - 2 * var(--ring-room));
+  }
 }
 
 .platter:active {

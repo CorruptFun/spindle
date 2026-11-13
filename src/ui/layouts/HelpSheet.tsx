@@ -6,6 +6,8 @@ import styles from './HelpSheet.module.css';
 interface Tip {
   mark: ReactNode;
   text: string;
+  /** About a control that Play mode does not show. */
+  beyondPlay?: boolean;
 }
 
 /** Small pictures for the guide, drawn on the same 24-unit grid as the app's other marks. */
@@ -80,8 +82,16 @@ const TIPS: Readonly<Record<Workspace, readonly Tip[]>> = {
   studio: [
     { mark: PADS, text: 'Tap the pads to play the drums.' },
     { mark: PLAY, text: 'Press play to start a loop, then pick another. It changes on the beat.' },
-    { mark: DOT, text: 'In Mix and Pro, press record and play the pads to add your own hits.' },
-    { mark: STEPS, text: 'Tap a pad, then the step buttons, to change its rhythm.' },
+    {
+      mark: DOT,
+      text: 'Press record and play the pads to add your own hits.',
+      beyondPlay: true,
+    },
+    {
+      mark: STEPS,
+      text: 'Tap a pad, then the step buttons, to change its rhythm.',
+      beyondPlay: true,
+    },
     { mark: LOOP, text: 'The shapes at the top change the drum kit.' },
   ],
 };
@@ -94,16 +104,19 @@ const HEADINGS: Readonly<Record<Workspace, string>> = {
 interface HelpSheetProps {
   /** Which room the guide is for. */
   workspace: Workspace;
+  /** Play mode: leave out tips about controls it does not show. */
+  simple: boolean;
   open: boolean;
   onClose: () => void;
 }
 
 /** The guide. The instrument itself carries no explanations; they all live here. */
-export function HelpSheet({ workspace, open, onClose }: HelpSheetProps) {
+export function HelpSheet({ workspace, simple, open, onClose }: HelpSheetProps) {
+  const tips = [...TIPS[workspace], ...EVERYWHERE].filter((tip) => !(simple && tip.beyondPlay));
   return (
     <Sheet open={open} onClose={onClose} heading={HEADINGS[workspace]}>
       <ul className={styles.tips}>
-        {[...TIPS[workspace], ...EVERYWHERE].map((tip) => (
+        {tips.map((tip) => (
           <li key={tip.text} className={styles.tip}>
             <svg className={styles.mark} viewBox="0 0 24 24" aria-hidden="true">
               {tip.mark}

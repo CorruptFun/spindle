@@ -192,7 +192,11 @@ export class PadBank implements PadBankControl {
   private choke(group: number, hit: Pad, at: number): void {
     for (const pad of this.pads) {
       if (pad === hit || pad.chokeGroup !== group) continue;
-      for (const voice of pad.voices) this.fade(pad, voice, at);
+      for (const voice of pad.voices) {
+        // Only what is already sounding is cut off. A hit scheduled for later is left alone:
+        // it is still to come, and a finger now has no business deleting it.
+        if (voice.start < at) this.fade(pad, voice, at);
+      }
     }
   }
 

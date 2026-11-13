@@ -209,3 +209,10 @@
     transform: none;
   }
 }
+
+/* A phone: the four lines of keys sit closer, to leave the pads more room. */
+@media (max-width: 480px) {
+  .keys {
+    gap: var(--space-1) var(--space-3);
+  }
+}

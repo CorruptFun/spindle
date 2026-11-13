@@ -1,0 +1,52 @@
+/*
+ * The whole track laid out in a recessed lane, like the fader slots: same well,
+ * same hairline. What has been played takes the deck's colour, what is to come
+ * stays a dim neutral, and the playhead is an ink line. The colours are read
+ * by the drawing code from the custom properties below, so they stay here with
+ * the other tokens. Empty, the lane is the same size, so nothing moves when a
+ * song arrives.
+ */
+.lane {
+  --wave-played: var(--deck, var(--ink));
+  --wave-to-come: var(--ink-faint);
+  --wave-playhead: var(--ink);
+  --inset-x: var(--space-2);
+  --inset-y: var(--space-1);
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: var(--touch-min);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-cap);
+  background: var(--well);
+  cursor: pointer;
+  /* A drag on the lane moves the needle; it must not scroll or zoom the page. */
+  touch-action: none;
+  transition: border-color var(--dur) var(--ease-out);
+}
+
+.lane[data-state='loaded']:hover {
+  border-color: var(--ink-faint);
+}
+
+/* Nothing to seek: let a scroll that starts here scroll the page. */
+.lane[data-state='empty'] {
+  cursor: default;
+  touch-action: auto;
+}
+
+/*
+ * Sized from the lane, never from its own drawing buffer, so the lane's height
+ * is always the parent's to decide.
+ */
+.canvas {
+  position: absolute;
+  top: var(--inset-y);
+  left: var(--inset-x);
+  display: block;
+  width: calc(100% - 2 * var(--inset-x));
+  height: calc(100% - 2 * var(--inset-y));
+  pointer-events: none;
+}

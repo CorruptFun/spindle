@@ -226,3 +226,33 @@
     transform: none;
   }
 }
+
+/* A phone: everything on one line, a little smaller, and without the printed labels. */
+@media (max-width: 480px) {
+  .bar {
+    gap: var(--space-2) var(--space-3);
+  }
+
+  .buttons {
+    gap: var(--space-2);
+  }
+
+  .play {
+    width: calc(var(--touch-min) + var(--space-2));
+    height: calc(var(--touch-min) + var(--space-2));
+  }
+
+  .label,
+  .unit {
+    display: none;
+  }
+
+  .tempo {
+    gap: var(--space-1);
+  }
+
+  .readout {
+    min-width: calc(var(--space-7) + var(--space-2));
+    padding: var(--space-1) var(--space-2);
+  }
+}

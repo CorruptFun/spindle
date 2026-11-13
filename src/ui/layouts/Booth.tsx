@@ -92,6 +92,8 @@ function BoothDeck({ deck, canRewind }: { deck: DeckId; canRewind: boolean }) {
   );
   const togglePlay = useBooth((state) => state.togglePlay);
   const backToStart = useBooth((state) => state.backToStart);
+  const peaks = useBooth((state) => state.peaks[deck]);
+  const seek = useBooth((state) => state.seek);
   const openPicker = useBooth((state) => state.openPicker);
   const dropOnDeck = useBooth((state) => state.dropOnDeck);
 
@@ -106,6 +108,8 @@ function BoothDeck({ deck, canRewind }: { deck: DeckId; canRewind: boolean }) {
       onTogglePlay={() => togglePlay(deck)}
       onBackToStart={canRewind ? () => backToStart(deck) : undefined}
       onChooseTrack={() => openPicker(deck)}
+      peaks={peaks}
+      onSeek={(positionSec) => seek(deck, positionSec)}
       onDropData={(data) => void dropOnDeck(deck, data)}
     />
   );

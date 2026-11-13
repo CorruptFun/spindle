@@ -85,7 +85,12 @@ export function AppShell() {
         {workspace === 'studio' ? <Studio mode={mode} /> : <Booth mode={mode} />}
       </main>
 
-      <HelpSheet workspace={workspace} open={helpOpen} onClose={() => setHelpOpen(false)} />
+      <HelpSheet
+        workspace={workspace}
+        simple={mode.id === 'play'}
+        open={helpOpen}
+        onClose={() => setHelpOpen(false)}
+      />
       <Notice />
       <UpdateToast />
     </div>

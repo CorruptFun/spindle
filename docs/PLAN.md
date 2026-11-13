@@ -74,7 +74,8 @@ remaining work for this milestone.
 
 - Tempo fader, nudge and brake on top of the M1 playhead.
 - Scratch feel tuned on real devices, with touch-to-sound latency measured and shown.
-- Waveform peaks computed in a worker; overview and scrolling waveforms on canvas.
+- A whole-track waveform with a playhead on each deck is built: tap or drag it to jump. Still
+  to come: the zoomed, scrolling view, coloured by frequency.
 
 **Done when** scratching feels attached to the finger (round-trip latency measured and shown)
 and waveforms scroll at the display's full frame rate on a mid-range phone.

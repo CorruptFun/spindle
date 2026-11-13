@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import type { ModeDefinition } from '@/config/modes';
 import { STUDIO_MODES } from '@/config/studio';
 import { STEPS_PER_BAR } from '@/engine/sequencer/types';
@@ -37,6 +37,12 @@ export function Studio({ mode }: { mode: ModeDefinition }) {
   const setSwing = useStudio((state) => state.setSwing);
   const pickKit = useStudio((state) => state.pickKit);
   const resetLoop = useStudio((state) => state.resetLoop);
+  const stopRecording = useStudio((state) => state.stopRecording);
+
+  // Recording must never stay on in a mode that shows no record button.
+  useEffect(() => {
+    if (!features.record) stopRecording();
+  }, [features.record, stopRecording]);
 
   const kit = KITS.find((known) => known.id === project.kitId) ?? KITS[0];
   const pattern = project.slots[project.activeSlot];
@@ -105,16 +111,18 @@ export function Studio({ mode }: { mode: ModeDefinition }) {
       </div>
 
       {features.stepEditor && editedPad && (
-        <StepRow
-          pad={editedPad}
-          steps={steps}
-          bar={shownBar}
-          bars={pattern.bars}
-          onBarChange={setBar}
-          readStep={readStep}
-          running={playing}
-          onToggle={toggleStep}
-        />
+        <div className={styles.steps}>
+          <StepRow
+            pad={editedPad}
+            steps={steps}
+            bar={shownBar}
+            bars={pattern.bars}
+            onBarChange={setBar}
+            readStep={readStep}
+            running={playing}
+            onToggle={toggleStep}
+          />
+        </div>
       )}
 
       <div className={styles.transport}>

@@ -10,6 +10,12 @@
   width: 100%;
 }
 
+@media (min-width: 700px) {
+  .slots {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
+}
+
 @media (min-width: 640px) {
   .slots {
     gap: var(--space-3);

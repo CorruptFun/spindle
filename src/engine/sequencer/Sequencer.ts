@@ -29,6 +29,9 @@ function emptyPattern(): DrumPattern {
  * due before a short look-ahead horizon, and schedules those on the pads at
  * their exact times. Timer jitter therefore never reaches the beat.
  */
+/** Roughly how long a touch takes to reach the page on a tablet. */
+const TOUCH_LAG_SEC = 0.02;
+
 export class Sequencer implements SequencerControl {
   onBar: (() => void) | null = null;
 
@@ -128,7 +131,21 @@ export class Sequencer implements SequencerControl {
   }
 
   recordHit(pad: number, velocity: number): DrumPattern | null {
-    return this.core.recordHit(pad, velocity, this.context.currentTime);
+    return this.core.recordHit(pad, velocity, this.context.currentTime - this.heardLag());
+  }
+
+  /**
+   * How far what the person hears trails the audio clock, in seconds: the device's output
+   * delay, plus a little for a touch to reach us. They tap along with what they hear, so a
+   * recorded hit is placed that much earlier, or every hit would land late.
+   */
+  private heardLag(): number {
+    const context = this.context as BaseAudioContext & {
+      baseLatency?: number;
+      outputLatency?: number;
+    };
+    const output = (context.baseLatency ?? 0) + (context.outputLatency ?? 0);
+    return (Number.isFinite(output) ? output : 0) + TOUCH_LAG_SEC;
   }
 
   stepPosition(): number {

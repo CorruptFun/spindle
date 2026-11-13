@@ -11,7 +11,8 @@
 
 .tile {
   display: flex;
-  flex: 1 1 0;
+  /* Wide enough for its own name, then sharing whatever is left. */
+  flex: 1 0 auto;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);

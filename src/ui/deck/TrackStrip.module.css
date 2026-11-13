@@ -6,6 +6,7 @@
  */
 .strip {
   --line: 2px;
+  --key-lip: 2px;
   position: relative;
   display: flex;
   align-items: center;
@@ -16,12 +17,31 @@
   padding: 0 var(--space-3) 0 var(--space-2);
   border: 1px solid var(--hairline);
   border-radius: var(--radius-control);
-  background: var(--well);
+  background: var(--panel-raised);
+  /* The key's own side, standing on the panel: it is a button and should look like one. */
+  box-shadow: 0 var(--key-lip) 0 var(--well);
   text-align: start;
   cursor: pointer;
   transition:
-    background-color var(--dur) var(--ease-out),
-    border-color var(--dur) var(--ease-out);
+    border-color var(--dur) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+
+/* A small arrow at the end: tapping this opens something. */
+.strip::after {
+  content: '';
+  flex: none;
+  width: var(--space-2);
+  height: var(--space-2);
+  margin-inline-start: var(--space-1);
+  border-right: 2px solid var(--ink-dim);
+  border-bottom: 2px solid var(--ink-dim);
+  transform: translateY(-25%) rotate(45deg);
+}
+
+.strip[data-state='empty']::after {
+  display: none;
 }
 
 .strip:hover {
@@ -29,7 +49,8 @@
 }
 
 .strip:active {
-  background: var(--panel-raised);
+  box-shadow: 0 0 0 var(--well);
+  transform: translateY(var(--key-lip));
 }
 
 .strip[data-state='empty'] {

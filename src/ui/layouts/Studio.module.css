@@ -1,8 +1,15 @@
+/*
+ * The Studio fills the room it is given. The shelf, the step buttons and the
+ * transport take what they need; the pads get everything that is left, so
+ * they are as big as the screen allows and nothing needs scrolling.
+ */
 .studio {
   display: flex;
+  flex: 1;
   flex-direction: column;
-  gap: var(--space-5);
-  padding: var(--space-4);
+  gap: var(--space-3);
+  min-height: 0;
+  padding: var(--space-3);
   border: 1px solid var(--hairline);
   border-radius: var(--radius-panel);
   background: var(--panel);
@@ -10,25 +17,27 @@
 
 /* What to play with: the kit, and the loops to hand. */
 .shelf {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
+  display: grid;
+  flex: none;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-2);
 }
 
-/* The pads are the instrument: centred, and as large as the window allows. */
+/* The pads are the instrument. Never smaller than two rows a finger can hit. */
 .pads {
-  width: 100%;
-  max-width: 640px;
-  margin: 0 auto;
+  flex: 1 1 0;
+  min-height: calc(2 * var(--touch-min) + var(--space-2));
+}
+
+.steps {
+  flex: none;
 }
 
 .transport {
   display: flex;
+  flex: none;
   flex-direction: column;
-  gap: var(--space-3);
-  width: 100%;
-  max-width: 640px;
-  margin: 0 auto;
+  gap: var(--space-2);
 }
 
 .unavailable {
@@ -49,19 +58,14 @@
 
 @media (min-width: 900px) {
   .studio {
-    gap: var(--space-6);
-    padding: var(--space-6);
+    gap: var(--space-4);
+    padding: var(--space-4);
   }
 
-  /* With room to spare, the kit sits beside the loops. */
+  /* With room to spare, the kit sits beside the loops, all in one row. */
   .shelf {
-    flex-direction: row;
-    align-items: flex-start;
-    gap: var(--space-6);
-  }
-
-  .shelf > :last-child {
-    flex: 1;
-    min-width: 0;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: stretch;
+    gap: var(--space-4);
   }
 }
