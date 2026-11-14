@@ -74,8 +74,11 @@ remaining work for this milestone.
 
 - Tempo fader, nudge and brake on top of the M1 playhead.
 - Scratch feel tuned on real devices, with touch-to-sound latency measured and shown.
-- A whole-track waveform with a playhead on each deck is built: tap or drag it to jump. Still
-  to come: the zoomed, scrolling view, coloured by frequency.
+- A whole-track waveform with a playhead on each deck is built: tap or drag it to jump.
+- On a desk-sized screen (1280 by 720 and up) the booth is laid out as a DJ set-up: a close-up
+  waveform per deck scrolling under a line that marks now, larger records, and a mixer between
+  the decks. Still to come: the close-up coloured by frequency, and on tablets.
+- Keyboard: play and rewind each deck, play the deck last touched, nudge the crossfader.
 
 **Done when** scratching feels attached to the finger (round-trip latency measured and shown)
 and waveforms scroll at the display's full frame rate on a mid-range phone.
@@ -111,7 +114,8 @@ are fixed. This milestone is driven by watching, not by a checklist.
 
 - Four decks, stacked waveforms, tempo ranges, crossfader curve and assign.
 - Headphone cue (second audio output where the browser allows it, split-mono fallback).
-- MIDI controllers: mappings for common devices and MIDI learn. Keyboard shortcuts.
+- MIDI controllers: mappings for common devices and MIDI learn. Keyboard shortcuts for what
+  the rig adds (the basic ones are built).
 - Recording the mix to a file.
 
 **Done when** a DJ can play a set from a hardware controller with headphones and record it.
@@ -169,6 +173,10 @@ host. The aim is a drum machine that grows into a small, friendly studio.
 - A song in Mix and Pro: up to sixteen loops in a row, each played all the way through once,
   then the next, and round again, never out of time. Touching a loop leaves the song and keeps
   that loop going.
+- On a desk-sized screen the Studio is a small workstation: the whole beat as a grid (a row of
+  steps for every pad, both bars where they fit), the layers above it, the song as a strip on
+  screen, and compact pads. Keyboard: play and stop, record, the eight pads, the four layers,
+  undo.
 
 **Done when** a child can make a beat they are proud of with no instructions.
 

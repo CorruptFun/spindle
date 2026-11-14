@@ -2,12 +2,18 @@ import type { ReactNode } from 'react';
 import type { Workspace } from '@/state/settings';
 import { Sheet } from '@/ui/components/Sheet';
 import styles from './HelpSheet.module.css';
+import { useIsDesktop } from './use-desktop';
 
 interface Tip {
   mark: ReactNode;
   text: string;
   /** About a control that Play mode does not show. */
   beyondPlay?: boolean;
+  /**
+   * 'only': for a desk-sized screen, where the room is laid out differently and a
+   * keyboard is to hand. 'never': describes the hand-held layout, so left out there.
+   */
+  desk?: 'only' | 'never';
 }
 
 /** Small pictures for the guide, drawn on the same 24-unit grid as the app's other marks. */
@@ -82,6 +88,31 @@ const SONG = (
     <path d="M3 17.5h18" {...stroke} />
   </>
 );
+/** One key of a keyboard. */
+const KEY = (
+  <>
+    <rect x="4" y="5" width="16" height="14" rx="3" {...stroke} />
+    <path d="M9 15h6" {...stroke} />
+  </>
+);
+/** A grid of steps, some of them on. */
+const GRID = (
+  <>
+    <rect x="3" y="5" width="4" height="4" rx="1" fill="currentColor" />
+    <rect x="10" y="5" width="4" height="4" rx="1" {...stroke} strokeWidth={1.5} />
+    <rect x="17" y="5" width="4" height="4" rx="1" {...stroke} strokeWidth={1.5} />
+    <rect x="3" y="15" width="4" height="4" rx="1" {...stroke} strokeWidth={1.5} />
+    <rect x="10" y="15" width="4" height="4" rx="1" fill="currentColor" />
+    <rect x="17" y="15" width="4" height="4" rx="1" fill="currentColor" />
+  </>
+);
+/** A waveform either side of a line that marks now. */
+const WAVE = (
+  <>
+    <path d="M3 12h2M6.5 9v6M9.5 7v10M14.5 8v8M17.5 10v4M19.5 12h1.5" {...stroke} />
+    <path d="M12 4v16" {...stroke} strokeWidth={1.5} />
+  </>
+);
 const LEVELS = (
   <>
     <rect x="4" y="14" width="4" height="6" rx="1" fill="currentColor" />
@@ -102,6 +133,28 @@ const TIPS: Readonly<Record<Workspace, readonly Tip[]>> = {
     { mark: RECORD, text: 'Drag a record to scratch it.' },
     { mark: FADER, text: 'Slide the fader to mix from one record to the other.' },
     { mark: PLUS, text: 'Tap the bar above a record to change the song or add your own music.' },
+    {
+      mark: WAVE,
+      text: 'The big waveforms show what is coming. Drag one to move through the track.',
+      beyondPlay: true,
+      desk: 'only',
+    },
+    {
+      mark: KEY,
+      text: 'Keys: S plays the left record and A sends it back to the start. K and J do the same on the right.',
+      desk: 'only',
+    },
+    {
+      mark: KEY,
+      text: 'Space plays or pauses the record you touched last. The arrow keys move the fader.',
+      desk: 'only',
+    },
+    {
+      mark: KEY,
+      text: 'In Pro, W and Q work deck C, and O and I work deck D.',
+      beyondPlay: true,
+      desk: 'only',
+    },
   ],
   studio: [
     { mark: PADS, text: 'Tap the pads to play the drums.' },
@@ -120,6 +173,13 @@ const TIPS: Readonly<Record<Workspace, readonly Tip[]>> = {
       mark: STEPS,
       text: 'Tap a pad, then the step buttons, to change its rhythm.',
       beyondPlay: true,
+      desk: 'never',
+    },
+    {
+      mark: GRID,
+      text: 'The grid is the whole beat: a row for each drum. Click a step to turn it on, again to make it louder, again to turn it off.',
+      beyondPlay: true,
+      desk: 'only',
     },
     {
       mark: CLEAR,
@@ -130,6 +190,24 @@ const TIPS: Readonly<Record<Workspace, readonly Tip[]>> = {
       mark: SONG,
       text: 'Song puts loops in a row and plays them one after another.',
       beyondPlay: true,
+      desk: 'never',
+    },
+    {
+      mark: SONG,
+      text: 'The song row plays loops one after another. The plus adds the loop you are on; click one in the row to take it out.',
+      beyondPlay: true,
+      desk: 'only',
+    },
+    {
+      mark: KEY,
+      text: 'Keys: Space plays and stops. A S D F and Z X C V play the pads.',
+      desk: 'only',
+    },
+    {
+      mark: KEY,
+      text: 'R records. 1 to 4 choose a layer. Ctrl and Z takes the last change back.',
+      beyondPlay: true,
+      desk: 'only',
     },
     { mark: LOOP, text: 'The shapes at the top change the drum kit.' },
   ],
@@ -151,7 +229,10 @@ interface HelpSheetProps {
 
 /** The guide. The instrument itself carries no explanations; they all live here. */
 export function HelpSheet({ workspace, simple, open, onClose }: HelpSheetProps) {
-  const tips = [...TIPS[workspace], ...EVERYWHERE].filter((tip) => !(simple && tip.beyondPlay));
+  const desk = useIsDesktop();
+  const tips = [...TIPS[workspace], ...EVERYWHERE].filter(
+    (tip) => !(simple && tip.beyondPlay) && tip.desk !== (desk ? 'never' : 'only'),
+  );
   return (
     <Sheet open={open} onClose={onClose} heading={HEADINGS[workspace]}>
       <ul className={styles.tips}>

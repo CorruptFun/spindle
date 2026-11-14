@@ -61,14 +61,15 @@ the same abilities are reachable at three skill levels. This is the checklist th
 
 ## Hardware, output and app
 
-| Capability                 | Play | Mix | Pro | Milestone | Notes                                 |
-| -------------------------- | :--: | :-: | :-: | :-------: | ------------------------------------- |
-| Multi-touch                |  ●   |  ●  |  ●  |    M1     |                                       |
-| Installable, works offline |  ●   |  ●  |  ●  |  M0 / M8  |                                       |
-| Guided lessons             |  –   |  ●  |  –  |    M5     |                                       |
-| Record the mix             |  –   |  ●  |  ●  |    M6     | Never includes streamed audio         |
-| Keyboard shortcuts         |  –   |  –  |  ●  |    M6     |                                       |
-| MIDI controllers           |  –   |  –  |  ●  |    M6     | Not available in iPhone/iPad browsers |
+| Capability                 | Play | Mix | Pro | Milestone | Notes                                                  |
+| -------------------------- | :--: | :-: | :-: | :-------: | ------------------------------------------------------ |
+| Multi-touch                |  ●   |  ●  |  ●  |    M1     |                                                        |
+| Installable, works offline |  ●   |  ●  |  ●  |  M0 / M8  |                                                        |
+| Guided lessons             |  –   |  ●  |  –  |    M5     |                                                        |
+| Record the mix             |  –   |  ●  |  ●  |    M6     | Never includes streamed audio                          |
+| Keyboard shortcuts         |  ●   |  ●  |  ●  |  M2 / S1  | Play, rewind, crossfader; pads, record, layers, undo   |
+| Desk-sized layouts         |  ◐   |  ●  |  ●  |  M2 / S1  | From 1280 by 720: close-up waveforms, a full beat grid |
+| MIDI controllers           |  –   |  –  |  ●  |    M6     | Not available in iPhone/iPad browsers                  |
 
 ## Studio
 
@@ -86,6 +87,7 @@ the same abilities are reachable at three skill levels. This is the checklist th
 | Swing                                          |  –   |  –  |  ●  |  S1   |                                                     |
 | Beat kept on the device                        |  ●   |  ●  |  ●  |  S1   |                                                     |
 | Chain loops into a song                        |  –   |  ●  |  ●  |  S1   | Up to sixteen, each played through once, in time    |
+| The whole beat as a grid (desk-sized screens)  |  –   |  ●  |  ●  |  S1   | Eight rows of steps, both bars where they fit       |
 | Bass, keys and lead instruments                |  ◐   |  ●  |  ●  |  S2   | Play: a keyboard that cannot hit a wrong note       |
 | Note editor                                    |  –   |  ●  |  ●  |  S2   |                                                     |
 | Song timeline: sections of any length, repeats |  ◐   |  ●  |  ●  |  S3   | Builds on the chain of loops                        |
