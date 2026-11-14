@@ -90,3 +90,13 @@
     padding: var(--space-3) var(--space-4);
   }
 }
+
+/*
+ * A desk-sized screen (the same test as use-desktop.ts): each room has a wider
+ * layout of its own there, so it is given more of the screen to lay it out in.
+ */
+@media (min-width: 1280px) and (min-height: 720px) {
+  .main {
+    max-width: 1680px;
+  }
+}
