@@ -32,6 +32,40 @@
   line-height: 1.2;
 }
 
+/*
+ * With the layer keys in it the header must stay one line, or the page grows
+ * taller than a phone. As the row narrows the pad's name goes first (the pad
+ * stays ringed above, and a screen reader still hears the name), then the
+ * printed "Bar"; the layer keys narrow themselves below 440px.
+ */
+.header[data-slot='true'] {
+  flex-wrap: nowrap;
+}
+
+.header[data-slot='true'] .heading {
+  white-space: nowrap;
+}
+
+@container (max-width: 599px) {
+  .header[data-slot='true'] .heading {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+}
+
+@container (max-width: 439px) {
+  .header[data-slot='true'] {
+    gap: var(--space-2);
+  }
+
+  .header[data-slot='true'] .barsLabel {
+    display: none;
+  }
+}
+
 /* The pad's colour, as a swatch the size of a badge: the pad these keys belong to. */
 .chip {
   flex: none;
@@ -186,6 +220,12 @@
   background: var(--family);
 }
 
+/* Off in this layer but played by another: an outline in the pad's colour, no fill. */
+.key[data-other='true'] {
+  border-width: 2px;
+  border-color: var(--family);
+}
+
 /* The playhead lamp. Dark until the loop reaches this step. */
 .lamp {
   position: absolute;
@@ -214,5 +254,24 @@
 @media (max-width: 480px) {
   .keys {
     gap: var(--space-1) var(--space-3);
+  }
+}
+
+/* The same header narrowing by the screen's width, for browsers that cannot measure the row itself. */
+@media (max-width: 480px) {
+  .header[data-slot='true'] {
+    gap: var(--space-2);
+  }
+
+  .header[data-slot='true'] .heading {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .header[data-slot='true'] .barsLabel {
+    display: none;
   }
 }

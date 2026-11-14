@@ -20,7 +20,7 @@
  */
 import { clamp } from '@/lib/audio-math';
 import { MAX_BPM, MAX_SWING, MIN_BPM, STEPS_PER_BAR, STEPS_PER_BEAT, patternSteps } from './types';
-import type { DrumPattern } from './types';
+import type { DrumPattern, RecordedHit } from './types';
 
 export const DEFAULT_BPM = 100;
 
@@ -264,13 +264,14 @@ export class SequencerCore {
   /**
    * A finger hit `pad` at `now`. Writes it into the step that sounds nearest
    * to `now` (swing included; past the last step it wraps to step 0) and
-   * returns the new pattern, which becomes the one playing. If that step has
-   * not been handed out yet, this pad is skipped on it once, because the
-   * person has just played it. Null when stopped.
+   * returns the new pattern, which becomes the one playing, and the step the
+   * hit went to. If that step has not been handed out yet, this pad is
+   * skipped on it once, because the person has just played it. Null when
+   * stopped, or when the pad or the time make no sense; nothing is written then.
    */
-  recordHit(pad: number, velocity: number, now: number): DrumPattern | null {
+  recordHit(pad: number, velocity: number, now: number): RecordedHit | null {
     if (!this.playingValue) return null;
-    if (!Number.isInteger(pad) || pad < 0 || !Number.isFinite(now)) return this.current;
+    if (!Number.isInteger(pad) || pad < 0 || !Number.isFinite(now)) return null;
 
     const around = Math.floor(this.stepAt(now));
     let best = Math.max(0, around - 1);
@@ -291,7 +292,7 @@ export class SequencerCore {
       while (this.suppressed.length <= pad) this.suppressed.push(-1);
       this.suppressed[pad] = best;
     }
-    return this.current;
+    return { pattern: this.current, step: index };
   }
 
   /** The playhead in steps, 0 <= x < loop length, fractional. -1 when stopped. */

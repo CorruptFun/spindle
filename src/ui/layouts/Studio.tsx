@@ -4,16 +4,42 @@ import { STUDIO_MODES } from '@/config/studio';
 import { STEPS_PER_BAR } from '@/engine/sequencer/types';
 import { useBooth } from '@/state/booth';
 import { canUndoLoop, isLoopEdited, useStudio } from '@/state/studio';
-import { FACTORY_LOOPS, isEmptyPattern, KITS } from '@/studio';
+import {
+  FACTORY_LOOPS,
+  isLayerEmpty,
+  isLoopEmpty,
+  KITS,
+  layerFamilies,
+  mixLoop,
+  otherLayersLane,
+  type DrumPattern,
+  type StudioLoop,
+} from '@/studio';
 import { LevelMeter } from '@/ui/components/LevelMeter';
 import { KitPicker } from '@/ui/studio/KitPicker';
+import { LayerStrip } from '@/ui/studio/LayerStrip';
 import { LoopSlots } from '@/ui/studio/LoopSlots';
 import { PadGrid } from '@/ui/studio/PadGrid';
 import { StepRow } from '@/ui/studio/StepRow';
 import { TransportBar } from '@/ui/studio/TransportBar';
 import styles from './Studio.module.css';
 
-/** The drum machine: a kit, eight loops, eight pads, and the transport. */
+/**
+ * Mixes, kept per loop. Loops are never changed in place, so a loop that has
+ * not changed keeps the same mix, and its tile's picture is not drawn again.
+ */
+const mixes = new WeakMap<StudioLoop, DrumPattern>();
+
+function mixOf(loop: StudioLoop): DrumPattern {
+  let mix = mixes.get(loop);
+  if (!mix) {
+    mix = mixLoop(loop);
+    mixes.set(loop, mix);
+  }
+  return mix;
+}
+
+/** The drum machine: a kit, eight loops, eight pads, four layers, and the transport. */
 export function Studio({ mode }: { mode: ModeDefinition }) {
   const features = STUDIO_MODES[mode.id];
   const engine = useBooth((state) => state.engine);
@@ -25,6 +51,7 @@ export function Studio({ mode }: { mode: ModeDefinition }) {
   const recording = useStudio((state) => state.recording);
   const queuedSlot = useStudio((state) => state.queuedSlot);
   const selectedPad = useStudio((state) => state.selectedPad);
+  const selectedLayer = useStudio((state) => state.selectedLayer);
   const bar = useStudio((state) => state.bar);
   const undo = useStudio((state) => state.undo);
 
@@ -32,6 +59,8 @@ export function Studio({ mode }: { mode: ModeDefinition }) {
   const togglePlay = useStudio((state) => state.togglePlay);
   const toggleRecord = useStudio((state) => state.toggleRecord);
   const selectSlot = useStudio((state) => state.selectSlot);
+  const selectLayer = useStudio((state) => state.selectLayer);
+  const clearLayer = useStudio((state) => state.clearLayer);
   const toggleStep = useStudio((state) => state.toggleStep);
   const setBar = useStudio((state) => state.setBar);
   const setTempo = useStudio((state) => state.setTempo);
@@ -48,16 +77,27 @@ export function Studio({ mode }: { mode: ModeDefinition }) {
   }, [features.record, stopRecording]);
 
   const kit = KITS.find((known) => known.id === project.kitId) ?? KITS[0];
-  const pattern = project.slots[project.activeSlot];
+  const loop = project.slots[project.activeSlot];
 
+  // Each tile pictures what its loop plays: the mix of its layers that are on.
   const slots = useMemo(
     () =>
       project.slots.map((slot, index) => ({
         name: FACTORY_LOOPS[index]?.name ?? `Loop ${index + 1}`,
-        pattern: slot,
+        pattern: mixOf(slot),
         edited: isLoopEdited(project, index),
       })),
     [project],
+  );
+
+  const layers = useMemo(
+    () =>
+      (loop?.layers ?? []).map((layer) => ({
+        empty: isLayerEmpty(layer),
+        muted: layer.muted,
+        families: layerFamilies(layer),
+      })),
+    [loop],
   );
 
   const readGlow = useCallback((pad: number) => engine?.pads.glow(pad) ?? 0, [engine]);
@@ -72,15 +112,22 @@ export function Studio({ mode }: { mode: ModeDefinition }) {
       </section>
     );
   }
-  if (!kit || !pattern) return null;
+  if (!kit || !loop) return null;
 
   // A one-bar loop has no second bar to show.
-  const shownBar = Math.min(bar, pattern.bars - 1);
+  const shownBar = Math.min(bar, loop.bars - 1);
   const editedPad = kit.pads[selectedPad];
-  const steps = (pattern.lanes[selectedPad] ?? []).slice(
-    shownBar * STEPS_PER_BAR,
-    (shownBar + 1) * STEPS_PER_BAR,
+  const from = shownBar * STEPS_PER_BAR;
+  // The keys show the chosen layer; what the other layers play on this pad is outlined.
+  const steps = (loop.layers[selectedLayer]?.pattern.lanes[selectedPad] ?? []).slice(
+    from,
+    from + STEPS_PER_BAR,
   );
+  const otherSteps = otherLayersLane(loop, selectedLayer, selectedPad).slice(
+    from,
+    from + STEPS_PER_BAR,
+  );
+  const chosenLayer = layers[selectedLayer];
 
   return (
     <section className={styles.studio} data-mode={mode.id} aria-label="Studio">
@@ -118,8 +165,21 @@ export function Studio({ mode }: { mode: ModeDefinition }) {
           <StepRow
             pad={editedPad}
             steps={steps}
+            otherSteps={otherSteps}
+            headerSlot={
+              features.layers ? (
+                <LayerStrip
+                  layers={layers}
+                  selected={selectedLayer}
+                  recording={recording}
+                  canClear={chosenLayer !== undefined && !chosenLayer.empty}
+                  onSelect={selectLayer}
+                  onClear={clearLayer}
+                />
+              ) : undefined
+            }
             bar={shownBar}
-            bars={pattern.bars}
+            bars={loop.bars}
             onBarChange={setBar}
             readStep={readStep}
             running={playing}
@@ -139,7 +199,7 @@ export function Studio({ mode }: { mode: ModeDefinition }) {
           showSwing={features.swing}
           showLoopTools={features.stepEditor}
           canUndo={canUndoLoop(undo, project)}
-          canClear={!isEmptyPattern(pattern)}
+          canClear={!isLoopEmpty(loop)}
           canReset={isLoopEdited(project, project.activeSlot)}
           onTogglePlay={togglePlay}
           onToggleRecord={toggleRecord}

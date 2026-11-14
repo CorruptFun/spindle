@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { PAD_COUNT } from '@/engine/sampler/types';
 import { MAX_BPM, MIN_BPM, STEPS_PER_BAR } from '@/engine/sequencer/types';
-import { FACTORY_LOOPS } from './loops';
+import { loopFromPattern, loopsEqual, mixLoop } from './layers';
+import { FACTORY_LOOPS, factoryLoop } from './loops';
 import { isEmptyPattern, normalizePattern, patternsEqual } from './pattern';
-import { PAD_ROLES, SLOT_COUNT } from './types';
+import { LAYER_COUNT, PAD_ROLES, SLOT_COUNT } from './types';
 
 const pad = (role: string): number => PAD_ROLES.findIndex((r) => r.role === role);
 const hits = (lane: readonly number[]): number => lane.filter((v) => v > 0).length;
@@ -97,5 +98,29 @@ describe('FACTORY_LOOPS', () => {
     expect(Object.isFrozen(pattern)).toBe(true);
     expect(Object.isFrozen(pattern.lanes)).toBe(true);
     expect(Object.isFrozen(pattern.lanes[0])).toBe(true);
+  });
+});
+
+describe('factoryLoop', () => {
+  it('is each factory loop in layers, and mixes back into it', () => {
+    FACTORY_LOOPS.forEach(({ pattern }, slot) => {
+      const loop = factoryLoop(slot)!;
+      expect(loop.layers).toHaveLength(LAYER_COUNT);
+      expect(loopsEqual(loop, loopFromPattern(pattern))).toBe(true);
+      expect(patternsEqual(mixLoop(loop), pattern)).toBe(true);
+    });
+  });
+
+  it('is the same frozen loop every time', () => {
+    const loop = factoryLoop(2)!;
+    expect(factoryLoop(2)).toBe(loop);
+    expect(Object.isFrozen(loop)).toBe(true);
+    expect(Object.isFrozen(loop.layers)).toBe(true);
+    expect(Object.isFrozen(loop.layers[0])).toBe(true);
+    expect(Object.isFrozen(loop.layers[0]!.pattern.lanes[0])).toBe(true);
+  });
+
+  it('is null for a slot that does not exist', () => {
+    for (const slot of [-1, SLOT_COUNT, 1.5, Number.NaN]) expect(factoryLoop(slot)).toBeNull();
   });
 });

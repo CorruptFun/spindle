@@ -78,6 +78,7 @@ the same abilities are reachable at three skill levels. This is the checklist th
 | Four synthesised kits, one in 808 style    |  ●   |  ●  |  ●  |  S1   | Nothing downloaded or licensed                      |
 | Eight ready-made loops, swapped on the bar |  ●   |  ●  |  ●  |  S1   |                                                     |
 | Record your hits into a loop               |  –   |  ●  |  ●  |  S1   | Snapped to the nearest step; a click keeps the beat |
+| Four layers per loop, recorded one by one  |  –   |  ●  |  ●  |  S1   | Each can be switched off or emptied on its own      |
 | Clear a loop to build your own             |  –   |  ●  |  ●  |  S1   | Reset brings the ready-made loop back               |
 | Undo a recording, clear or reset           |  –   |  ●  |  ●  |  S1   | A second Undo puts it back                          |
 | Step editor                                |  –   |  ●  |  ●  |  S1   | One pad at a time, sixteen steps                    |

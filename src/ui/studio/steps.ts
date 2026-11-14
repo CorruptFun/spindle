@@ -20,7 +20,12 @@ export function playheadInBar(position: number, bar: number): number {
   return Math.floor(step / STEPS_PER_BAR) === bar ? step % STEPS_PER_BAR : -1;
 }
 
-/** Screen-reader name of a step button: "Step 5, on". */
-export function stepLabel(step: number, value: number): string {
-  return `Step ${step + 1}, ${stepState(value)}`;
+/**
+ * Screen-reader name of a step button: "Step 5, on". A step that is off here
+ * but played by another layer says so: "Step 5, played by another layer".
+ */
+export function stepLabel(step: number, value: number, other = 0): string {
+  const state = stepState(value);
+  if (state === 'off' && other > 0) return `Step ${step + 1}, played by another layer`;
+  return `Step ${step + 1}, ${state}`;
 }

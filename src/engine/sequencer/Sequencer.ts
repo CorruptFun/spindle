@@ -3,7 +3,7 @@ import { PAD_COUNT } from '../sampler/types';
 import { Click } from './click';
 import { SequencerCore } from './core';
 import { STEPS_PER_BAR } from './types';
-import type { DrumPattern, SequencerControl } from './types';
+import type { DrumPattern, RecordedHit, SequencerControl } from './types';
 
 /** How often the scheduler wakes while the page is visible. */
 const TICK_MS = 25;
@@ -155,7 +155,7 @@ export class Sequencer implements SequencerControl {
     if (!on) this.click?.silence();
   }
 
-  recordHit(pad: number, velocity: number): DrumPattern | null {
+  recordHit(pad: number, velocity: number): RecordedHit | null {
     return this.core.recordHit(pad, velocity, this.context.currentTime - this.heardLag());
   }
 

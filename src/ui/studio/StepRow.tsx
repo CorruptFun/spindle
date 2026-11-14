@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useRef } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { STEPS_PER_BAR } from '@/engine/sequencer/types';
 import type { PadInfo } from '@/studio/types';
 import { familyStyle } from '@/ui/theme/family-colors';
@@ -9,6 +9,10 @@ interface StepRowProps {
   pad: PadInfo;
   /** The 16 steps of the bar being shown: 0 = off, up to 1 = loudest. */
   steps: readonly number[];
+  /** The same 16 steps as the other layers play them. A key that is off here but on there is outlined. */
+  otherSteps?: readonly number[];
+  /** Sits in the header between the pad's name and the bar switch: the layer keys. */
+  headerSlot?: ReactNode;
   /** Which bar of the loop is shown (0 or 1) and how many it has. */
   bar: number;
   bars: 1 | 2;
@@ -25,13 +29,17 @@ const BEATS = STEPS_PER_BAR / 4;
 /**
  * One pad's steps, like the row of step keys on a drum machine: sixteen keys
  * in four groups of four, one group per beat. A key is dark when off, tinted
- * with the pad's colour when on, and filled with it when accented. The lamp at
- * the top of each key is the playhead, moved straight on the page every frame
- * while the loop runs and only while the bar it is playing is the bar on screen.
+ * with the pad's colour when on, and filled with it when accented. A key that
+ * another layer plays is outlined in that colour, so a new layer can be fitted
+ * around the old ones. The lamp at the top of each key is the playhead, moved
+ * straight on the page every frame while the loop runs and only while the bar
+ * it is playing is the bar on screen.
  */
 export function StepRow({
   pad,
   steps,
+  otherSteps,
+  headerSlot,
   bar,
   bars,
   onBarChange,
@@ -74,12 +82,14 @@ export function StepRow({
 
   return (
     <section className={styles.row} style={familyStyle(pad.family)} aria-labelledby={headingId}>
-      <header className={styles.header}>
+      <header className={styles.header} data-slot={Boolean(headerSlot)}>
         <h3 id={headingId} className={styles.heading}>
           <span className={styles.chip} aria-hidden="true" />
           <span className={styles.hidden}>Steps for </span>
           {pad.name}
         </h3>
+
+        {headerSlot}
 
         {bars === 2 && (
           <div className={styles.bars} role="group" aria-label="Bar">
@@ -118,6 +128,8 @@ export function StepRow({
               {Array.from({ length: 4 }, (_, within) => {
                 const step = beat * 4 + within;
                 const value = steps[step] ?? 0;
+                const other = otherSteps?.[step] ?? 0;
+                const state = stepState(value);
                 return (
                   <button
                     key={step}
@@ -126,8 +138,9 @@ export function StepRow({
                     }}
                     type="button"
                     className={styles.key}
-                    data-state={stepState(value)}
-                    aria-label={stepLabel(step, value)}
+                    data-state={state}
+                    data-other={state === 'off' && other > 0 ? 'true' : undefined}
+                    aria-label={stepLabel(step, value, other)}
                     onClick={() => onToggle(step)}
                   >
                     <span className={styles.lamp} aria-hidden="true" />

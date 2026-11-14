@@ -1,0 +1,170 @@
+/*
+ * The layer keys and their bin. A key is a loop tile in miniature: the same
+ * raised body, hairline edge, press and ring. It sizes itself by the step
+ * row it sits in (the nearest container), narrower on a phone so the row's
+ * header stays on one line.
+ */
+.strip {
+  --layer-width: calc(var(--space-7) + var(--space-2));
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+@container (max-width: 439px) {
+  .strip {
+    --layer-width: calc(var(--space-6) + var(--space-2));
+  }
+}
+
+.layer {
+  --ring: 2px;
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--layer-width);
+  min-height: var(--touch-min);
+  padding: 0;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-control);
+  background: var(--panel-raised);
+  cursor: pointer;
+  transition:
+    border-color var(--dur) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+@media (hover: hover) {
+  .layer:hover {
+    border-color: var(--ink-faint);
+  }
+}
+
+.layer:active {
+  transform: scale(0.96);
+}
+
+/* The ring for "this one": drawn outside the hairline, as on the loop tiles. */
+.layer::after {
+  content: '';
+  position: absolute;
+  inset: calc(-1 * var(--ring));
+  border: var(--ring) solid transparent;
+  border-radius: calc(var(--radius-control) + var(--ring) - 1px);
+  pointer-events: none;
+  transition: border-color var(--dur) var(--ease-out);
+}
+
+.layer[data-selected='true']::after {
+  border-color: var(--ink);
+}
+
+/* Being recorded into: the recorder's red, and nothing else uses it. */
+.layer[data-recording='true']::after {
+  border-color: var(--record);
+}
+
+/* The number above, the pips below. */
+.face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  transition: opacity var(--dur) var(--ease-out);
+}
+
+.number {
+  color: var(--ink-dim);
+  font-size: var(--text-s);
+  font-weight: 650;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.layer[data-selected='true'] .number {
+  color: var(--ink);
+}
+
+.pips {
+  display: flex;
+  gap: 2px;
+}
+
+.pip {
+  width: calc(var(--space-1) + 2px);
+  height: calc(var(--space-1) + 2px);
+  border-radius: 50%;
+  background: var(--family);
+}
+
+/* Switched off: still there, still chosen, but dimmed like a channel that is muted. */
+.layer[data-muted='true'] .face {
+  opacity: 0.35;
+}
+
+/* The bin: one of the transport's round caps. */
+.bin {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--touch-min);
+  height: var(--touch-min);
+  margin-inline-start: var(--space-1);
+  padding: 0;
+  border: 1px solid var(--hairline);
+  border-radius: 50%;
+  background: var(--panel-raised);
+  color: var(--ink);
+  cursor: pointer;
+  transition:
+    opacity var(--dur) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.bin:active {
+  transform: scale(0.94);
+}
+
+.mark {
+  width: 44%;
+  height: 44%;
+}
+
+/* Nothing in the layer: the cap stays in place, faded, and does nothing. */
+.bin[aria-disabled='true'] {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.bin[aria-disabled='true']:active {
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .layer:active,
+  .bin:active {
+    transform: none;
+  }
+}
+
+/* The same narrowing by the screen's width, for browsers that cannot measure the row itself. */
+@media (max-width: 480px) {
+  .strip {
+    --layer-width: calc(var(--space-6) + var(--space-2));
+  }
+}
+
+/* The narrowest phones: the keys give up a little more width so the bar switch still fits beside them. */
+@container (max-width: 329px) {
+  .strip {
+    --layer-width: calc(var(--space-6) + var(--space-1));
+  }
+}
+
+@media (max-width: 366px) {
+  .strip {
+    --layer-width: calc(var(--space-6) + var(--space-1));
+  }
+}

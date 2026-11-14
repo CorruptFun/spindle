@@ -38,4 +38,11 @@ describe('stepLabel', () => {
     expect(stepLabel(0, 0)).toBe('Step 1, off');
     expect(stepLabel(15, STEP_ACCENT)).toBe('Step 16, accent');
   });
+
+  it('says when a step that is off here is played by another layer', () => {
+    expect(stepLabel(4, 0, STEP_ON)).toBe('Step 5, played by another layer');
+    expect(stepLabel(4, 0, 0)).toBe('Step 5, off');
+    // This layer's own hit is what the key shows.
+    expect(stepLabel(4, STEP_ON, STEP_ACCENT)).toBe('Step 5, on');
+  });
 });

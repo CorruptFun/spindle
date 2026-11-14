@@ -7,8 +7,9 @@
  */
 
 import { STEPS_PER_BAR } from '@/engine/sequencer/types';
+import { loopFromPattern } from './layers';
 import { STEP_ACCENT, STEP_ON } from './pattern';
-import { PAD_ROLES, type FactoryLoop, type PadRole } from './types';
+import { PAD_ROLES, type FactoryLoop, type PadRole, type StudioLoop } from './types';
 
 /**
  * One character per sixteenth step. Velocity carries the feel: accents, a
@@ -134,3 +135,31 @@ export const FACTORY_LOOPS: readonly FactoryLoop[] = [
     tom: '................ ............xxXX',
   }),
 ];
+
+function freezeLoop(loop: StudioLoop): StudioLoop {
+  return Object.freeze({
+    bars: loop.bars,
+    layers: Object.freeze(
+      loop.layers.map((layer) =>
+        Object.freeze({
+          muted: layer.muted,
+          pattern: Object.freeze({
+            bars: layer.pattern.bars,
+            lanes: Object.freeze(layer.pattern.lanes.map((lane) => Object.freeze(lane.slice()))),
+          }),
+        }),
+      ),
+    ),
+  });
+}
+
+/** Each factory loop split into its layers, one per drum family. Frozen, like the patterns. */
+const FACTORY_LAYERED: readonly StudioLoop[] = FACTORY_LOOPS.map((factory) =>
+  freezeLoop(loopFromPattern(factory.pattern)),
+);
+
+/** The ready-made loop for a slot, as layers. Null for a slot that does not exist. */
+export function factoryLoop(slot: number): StudioLoop | null {
+  if (!Number.isInteger(slot)) return null;
+  return FACTORY_LAYERED[slot] ?? null;
+}

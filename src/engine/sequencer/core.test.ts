@@ -289,23 +289,43 @@ describe('recordHit', () => {
     expect(core.recordHit(0, 1, 5)).toBeNull();
   });
 
-  it('writes into the nearest step and returns a new pattern', () => {
+  it('writes into the nearest step and returns a new pattern and the step', () => {
     const empty = { bars: 1, lanes: [[], []] } satisfies DrumPattern;
     const core = playing(empty, 120);
     const step = stepDurationSec(120);
     collect(core, T0 + 4 * step);
     const recorded = core.recordHit(1, 0.7, T0 + 6.4 * step);
     expect(recorded).not.toBeNull();
-    expect(recorded).not.toBe(empty);
-    expect(recorded!.lanes[1]![6]).toBe(0.7);
-    expect(recorded!.lanes[1]!.filter((v) => v > 0)).toHaveLength(1);
-    expect(recorded!.lanes[1]).toHaveLength(16);
+    expect(recorded!.step).toBe(6);
+    expect(recorded!.pattern).not.toBe(empty);
+    expect(recorded!.pattern.lanes[1]![6]).toBe(0.7);
+    expect(recorded!.pattern.lanes[1]!.filter((v) => v > 0)).toHaveLength(1);
+    expect(recorded!.pattern.lanes[1]).toHaveLength(16);
     expect(empty.lanes[1]).toHaveLength(0);
-    expect(core.pattern).toBe(recorded);
+    expect(core.pattern).toBe(recorded!.pattern);
 
     const later = core.recordHit(0, 1, T0 + 9.6 * step);
-    expect(later!.lanes[0]![10]).toBe(1);
-    expect(later!.lanes[1]![6]).toBe(0.7);
+    expect(later!.step).toBe(10);
+    expect(later!.pattern.lanes[0]![10]).toBe(1);
+    expect(later!.pattern.lanes[1]![6]).toBe(0.7);
+  });
+
+  it('gives the step within the loop, not counted from the start of play', () => {
+    const core = playing({ bars: 2, lanes: [[]] }, 120);
+    const step = stepDurationSec(120);
+    // Second time round a two-bar loop, step 3 of bar two.
+    const recorded = core.recordHit(0, 1, T0 + (32 + 19) * step);
+    expect(recorded!.step).toBe(19);
+    expect(recorded!.pattern.lanes[0]![19]).toBe(1);
+  });
+
+  it('writes nothing for a pad or a time that makes no sense', () => {
+    const core = playing({ bars: 1, lanes: [[]] }, 120);
+    const before = core.pattern;
+    expect(core.recordHit(-1, 1, T0)).toBeNull();
+    expect(core.recordHit(1.5, 1, T0)).toBeNull();
+    expect(core.recordHit(0, 1, Number.NaN)).toBeNull();
+    expect(core.pattern).toBe(before);
   });
 
   it('takes swing into account when choosing the step', () => {
@@ -313,18 +333,19 @@ describe('recordHit', () => {
     const step = stepDurationSec(120);
     collect(core, T0 + 8 * step);
     // Step 5 sounds at 5.3 steps; 5.62 is nearer to it than to step 6.
-    expect(core.recordHit(0, 1, T0 + 5.62 * step)!.lanes[0]![5]).toBe(1);
+    expect(core.recordHit(0, 1, T0 + 5.62 * step)!.pattern.lanes[0]![5]).toBe(1);
     // Straight, the same moment would go to step 6.
     core.setSwing(0);
-    expect(core.recordHit(0, 0.5, T0 + 21.62 * step)!.lanes[0]![6]).toBe(0.5);
+    expect(core.recordHit(0, 0.5, T0 + 21.62 * step)!.pattern.lanes[0]![6]).toBe(0.5);
   });
 
   it('wraps past the last step to step 0', () => {
     const core = playing({ bars: 1, lanes: [[]] }, 120);
     const step = stepDurationSec(120);
     const recorded = core.recordHit(0, 1, T0 + 15.8 * step);
-    expect(recorded!.lanes[0]![0]).toBe(1);
-    expect(recorded!.lanes[0]![15]).toBe(0);
+    expect(recorded!.step).toBe(0);
+    expect(recorded!.pattern.lanes[0]![0]).toBe(1);
+    expect(recorded!.pattern.lanes[0]![15]).toBe(0);
   });
 
   it('does not play the hit a second time when its step comes round', () => {
@@ -355,8 +376,8 @@ describe('recordHit', () => {
   it('adds a lane for a pad the pattern did not have', () => {
     const core = playing({ bars: 1, lanes: [] }, 120);
     const recorded = core.recordHit(3, 1, T0);
-    expect(recorded!.lanes).toHaveLength(4);
-    expect(recorded!.lanes[3]![0]).toBe(1);
+    expect(recorded!.pattern.lanes).toHaveLength(4);
+    expect(recorded!.pattern.lanes[3]![0]).toBe(1);
   });
 
   it('withStep pads short lanes and copies', () => {

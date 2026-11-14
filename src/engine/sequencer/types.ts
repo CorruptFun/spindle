@@ -24,6 +24,13 @@ export function patternSteps(pattern: DrumPattern): number {
   return pattern.bars * STEPS_PER_BAR;
 }
 
+/** A hit recorded into the loop: the loop with the hit in it, and where it landed. */
+export interface RecordedHit {
+  readonly pattern: DrumPattern;
+  /** Index of the step within the loop. */
+  readonly step: number;
+}
+
 /** Everything the rest of the app may do to the sequencer. */
 export interface SequencerControl {
   /** Start from the top of the loop, or stop. Stopping also silences the pads. */
@@ -57,9 +64,10 @@ export interface SequencerControl {
    * A finger hit `pad` just now while recording. Writes the hit into the
    * nearest step of the loop (wrapping at the end) and makes sure the sequencer
    * does not immediately play that same hit a second time. Returns the new
-   * pattern, or null when the sequencer is stopped.
+   * pattern and the step the hit went to, or null when the sequencer is
+   * stopped or there is no such pad.
    */
-  recordHit(pad: number, velocity: number): DrumPattern | null;
+  recordHit(pad: number, velocity: number): RecordedHit | null;
 
   /**
    * A click on every beat while playing, higher on the first beat of the bar.

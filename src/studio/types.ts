@@ -57,14 +57,33 @@ export interface FactoryLoop {
 /** How many loops the Studio keeps to hand. */
 export const SLOT_COUNT = 8;
 
+/** How many layers a loop is built from. They all play together. */
+export const LAYER_COUNT = 4;
+
+/** One layer of a loop: its own hits, and whether it is switched off. */
+export interface LoopLayer {
+  readonly pattern: DrumPattern;
+  readonly muted: boolean;
+}
+
+/**
+ * A loop as the person builds it: layers recorded one over another, so a new
+ * sound never costs the ones underneath. Exactly LAYER_COUNT layers, each
+ * pattern the same length as the loop. What plays is their mix.
+ */
+export interface StudioLoop {
+  readonly bars: PatternBars;
+  readonly layers: readonly LoopLayer[];
+}
+
 /** Everything about a beat that is worth keeping between visits. Plain data. */
 export interface StudioProject {
-  readonly version: 1;
+  readonly version: 2;
   readonly kitId: string;
   readonly bpm: number;
   readonly swing: number;
   /** Exactly SLOT_COUNT loops. */
-  readonly slots: readonly DrumPattern[];
+  readonly slots: readonly StudioLoop[];
   readonly activeSlot: number;
 }
 

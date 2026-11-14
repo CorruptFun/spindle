@@ -58,6 +58,15 @@ const STEPS = (
     <path d="M21 9v6" {...stroke} />
   </>
 );
+/** Four layer boxes, the third one switched off. */
+const LAYERS = (
+  <>
+    <rect x="2.5" y="7" width="4" height="10" rx="1" fill="currentColor" />
+    <rect x="7.5" y="7" width="4" height="10" rx="1" fill="currentColor" />
+    <rect x="12.75" y="7.25" width="3.5" height="9.5" rx="1" {...stroke} strokeWidth={1.5} />
+    <rect x="17.5" y="7" width="4" height="10" rx="1" fill="currentColor" />
+  </>
+);
 const CLEAR = (
   <>
     <path d="M5 7.5h14M10 4.5h4" {...stroke} />
@@ -90,7 +99,12 @@ const TIPS: Readonly<Record<Workspace, readonly Tip[]>> = {
     { mark: PLAY, text: 'Press play to start a loop, then pick another. It changes on the beat.' },
     {
       mark: DOT,
-      text: 'Press record and play the pads to add your own hits. A click keeps the beat.',
+      text: 'Pick a layer box, press record and play one sound. Pick the next box for the next sound.',
+      beyondPlay: true,
+    },
+    {
+      mark: LAYERS,
+      text: 'Tap a layer box again to switch it off. The bin beside the boxes empties it.',
       beyondPlay: true,
     },
     {

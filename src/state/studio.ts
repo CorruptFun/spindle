@@ -1,18 +1,25 @@
 import { create } from 'zustand';
 import { BRAND } from '@/config/brand';
 import type { AudioEngine } from '@/engine/AudioEngine';
-import { STEPS_PER_BAR, type DrumPattern } from '@/engine/sequencer/types';
+import { STEPS_PER_BAR } from '@/engine/sequencer/types';
 import {
+  clearLayer,
+  clearLoop,
   defaultProject,
-  emptyPattern,
-  FACTORY_LOOPS,
-  isEmptyPattern,
+  factoryLoop,
+  isLayerEmpty,
+  isLoopEmpty,
   KITS,
+  LAYER_COUNT,
+  loopsEqual,
+  mixLoop,
   parseProject,
-  patternsEqual,
+  recordIntoLayer,
   renderKit,
   serializeProject,
-  toggleStep,
+  setLayerMuted,
+  toggleLayerStep,
+  type StudioLoop,
   type StudioProject,
 } from '@/studio';
 
@@ -59,7 +66,8 @@ function saveNow(project: StudioProject): void {
 /** A loop as it was at some moment, and which slot it belongs to. */
 export interface LoopSnapshot {
   slot: number;
-  pattern: DrumPattern;
+  /** Every layer, as it was. */
+  loop: StudioLoop;
 }
 
 interface StudioState {
@@ -73,10 +81,13 @@ interface StudioState {
   queuedSlot: number | null;
   /** The pad whose steps are shown for editing. */
   selectedPad: number;
+  /** The layer that recording and step edits go into, 0..LAYER_COUNT-1. Not saved. */
+  selectedLayer: number;
   /** Which bar of the loop the step editor shows. */
   bar: number;
   /**
-   * A loop as it was before the last recording, clear or reset, for Undo.
+   * A loop as it was before the last recording, clear (of a layer or the whole loop) or
+   * reset, for Undo.
    * Undoing swaps it with the loop as it is, so a second Undo puts the change back.
    */
   undo: LoopSnapshot | null;
@@ -91,7 +102,9 @@ interface StudioState {
   /** Recording off. Used when the record button leaves the screen. */
   stopRecording: () => void;
   selectSlot: (slot: number) => void;
-  /** Toggle a step of the selected pad in the bar being shown. */
+  /** Choose the layer to record into. Choosing the one already chosen switches it off, or back on. */
+  selectLayer: (layer: number) => void;
+  /** Toggle a step of the selected pad, in the selected layer and the bar being shown. */
   toggleStep: (step: number) => void;
   setBar: (bar: number) => void;
   setTempo: (bpm: number) => void;
@@ -99,8 +112,10 @@ interface StudioState {
   pickKit: (kitId: string) => void;
   /** Put the current loop back the way it shipped. */
   resetLoop: () => void;
-  /** Empty the current loop, to build one from nothing. */
+  /** Empty the current loop, every layer, to build one from nothing. */
   clearLoop: () => void;
+  /** Empty the selected layer of the current loop, to record it again. */
+  clearLayer: () => void;
   /** Take back the last recording, clear or reset of the current loop; again to put it back. */
   undoLoop: () => void;
 }
@@ -117,7 +132,7 @@ let takeSlot: number | null = null;
  * store holds the beat's data, mirrors what the screen needs, and saves it.
  */
 export const useStudio = create<StudioState>()((set, get) => {
-  const activePattern = (project: StudioProject): DrumPattern =>
+  const activeLoop = (project: StudioProject): StudioLoop =>
     project.slots[project.activeSlot] ?? defaultProject().slots[0]!;
 
   /** Change the project, keep it saved. */
@@ -128,28 +143,26 @@ export const useStudio = create<StudioState>()((set, get) => {
     return project;
   };
 
-  /** Replace the loop in the active slot and let the sequencer carry on with it. */
-  const replaceActiveLoop = (pattern: DrumPattern): void => {
+  /** Replace the loop in the active slot and let the sequencer carry on with its mix. */
+  const replaceActiveLoop = (loop: StudioLoop): void => {
     const { project } = get();
-    const slots = project.slots.map((slot, index) =>
-      index === project.activeSlot ? pattern : slot,
-    );
+    const slots = project.slots.map((slot, index) => (index === project.activeSlot ? loop : slot));
     update({ slots });
-    engine?.sequencer.setPattern(pattern, 'now');
+    engine?.sequencer.setPattern(mixLoop(loop), 'now');
     // Applying an edit drops any change that was waiting for the bar line: queue it again.
     const { queuedSlot } = get();
     const queued = queuedSlot === null ? undefined : slots[queuedSlot];
-    if (queued) engine?.sequencer.setPattern(queued, 'next-bar');
+    if (queued) engine?.sequencer.setPattern(mixLoop(queued), 'next-bar');
   };
 
-  /** Replace the whole loop in the active slot, keeping what was there for Undo. */
-  const wipe = (pattern: DrumPattern): void => {
+  /** Replace the loop in the active slot, keeping what was there for Undo. */
+  const wipe = (loop: StudioLoop): void => {
     const { project } = get();
     const slot = project.activeSlot;
-    set({ undo: { slot, pattern: activePattern(project) } });
+    set({ undo: { slot, loop: activeLoop(project) } });
     // Hits recorded after this belong with it: one Undo brings back the loop as it was before.
     takeSlot = get().recording ? slot : null;
-    replaceActiveLoop(pattern);
+    replaceActiveLoop(loop);
   };
 
   /** Recording on or off. The click runs with it: an empty loop gives nothing to play along to. */
@@ -175,6 +188,7 @@ export const useStudio = create<StudioState>()((set, get) => {
     recording: false,
     queuedSlot: null,
     selectedPad: 0,
+    selectedLayer: 0,
     bar: 0,
     undo: null,
 
@@ -186,7 +200,7 @@ export const useStudio = create<StudioState>()((set, get) => {
       engine.mixer.setPadsLevel(PADS_LEVEL);
       engine.sequencer.setTempo(project.bpm);
       engine.sequencer.setSwing(project.swing);
-      engine.sequencer.setPattern(activePattern(project), 'now');
+      engine.sequencer.setPattern(mixLoop(activeLoop(project)), 'now');
       engine.sequencer.setClick(get().recording);
       // A queued loop becomes the current one when its bar line arrives.
       engine.sequencer.onBar = () => {
@@ -210,19 +224,20 @@ export const useStudio = create<StudioState>()((set, get) => {
       // loop, so it is played but not recorded.
       if (!recording || !playing || queuedSlot !== null) return;
       const recorded = engine.sequencer.recordHit(pad, RECORDED_VELOCITY);
-      if (recorded) {
-        const { project } = get();
-        const slot = project.activeSlot;
-        const before = project.slots[slot];
-        // The first hit of a recording: keep the loop as it was, so Undo takes the whole recording back.
-        if (takeSlot !== slot && before) {
-          takeSlot = slot;
-          set({ undo: { slot, pattern: before } });
-        }
-        update({
-          slots: project.slots.map((kept, index) => (index === slot ? recorded : kept)),
-        });
+      const { project, selectedLayer } = get();
+      const slot = project.activeSlot;
+      const before = project.slots[slot];
+      if (!recorded || !before) return;
+      // The first hit of a recording: keep the loop as it was, every layer, so Undo takes the
+      // whole recording back.
+      if (takeSlot !== slot) {
+        takeSlot = slot;
+        set({ undo: { slot, loop: before } });
       }
+      // The hit goes into the chosen layer only; the sequencer carries on with the new mix.
+      replaceActiveLoop(
+        recordIntoLayer(before, selectedLayer, pad, recorded.step, RECORDED_VELOCITY),
+      );
     },
 
     togglePlay() {
@@ -232,7 +247,7 @@ export const useStudio = create<StudioState>()((set, get) => {
         return;
       }
       void engine.resume();
-      engine.sequencer.setPattern(activePattern(get().project), 'now');
+      engine.sequencer.setPattern(mixLoop(activeLoop(get().project)), 'now');
       engine.sequencer.start();
       set({ playing: true });
     },
@@ -256,33 +271,46 @@ export const useStudio = create<StudioState>()((set, get) => {
 
     selectSlot(slot) {
       const { project, playing, queuedSlot } = get();
-      const pattern = project.slots[slot];
-      if (!engine || !pattern) return;
+      const loop = project.slots[slot];
+      if (!engine || !loop) return;
 
       if (!playing) {
         update({ activeSlot: slot });
         set({ bar: 0 });
-        engine.sequencer.setPattern(pattern, 'now');
+        engine.sequencer.setPattern(mixLoop(loop), 'now');
         return;
       }
       // Tapping the loop that is already playing cancels a change that was waiting.
       if (slot === project.activeSlot) {
         if (queuedSlot !== null) {
-          engine.sequencer.setPattern(activePattern(project), 'now');
+          engine.sequencer.setPattern(mixLoop(activeLoop(project)), 'now');
           set({ queuedSlot: null });
         }
         return;
       }
       // While playing, a new loop comes in on the bar line so it lands in time.
-      engine.sequencer.setPattern(pattern, 'next-bar');
+      engine.sequencer.setPattern(mixLoop(loop), 'next-bar');
       set({ queuedSlot: slot });
     },
 
+    selectLayer(layer) {
+      if (!Number.isInteger(layer) || layer < 0 || layer >= LAYER_COUNT) return;
+      const { project, selectedLayer } = get();
+      if (layer !== selectedLayer) {
+        set({ selectedLayer: layer });
+        return;
+      }
+      // The chosen layer again: switch it off, or back on. Not something Undo takes back.
+      const loop = activeLoop(project);
+      const muted = loop.layers[layer]?.muted ?? false;
+      replaceActiveLoop(setLayerMuted(loop, layer, !muted));
+    },
+
     toggleStep(step) {
-      const { project, selectedPad, bar } = get();
-      replaceActiveLoop(
-        toggleStep(activePattern(project), selectedPad, bar * STEPS_PER_BAR + step),
-      );
+      const { project, selectedPad, selectedLayer, bar } = get();
+      const loop = activeLoop(project);
+      const next = toggleLayerStep(loop, selectedLayer, selectedPad, bar * STEPS_PER_BAR + step);
+      if (next !== loop) replaceActiveLoop(next);
     },
 
     setBar(bar) {
@@ -306,22 +334,29 @@ export const useStudio = create<StudioState>()((set, get) => {
 
     resetLoop() {
       const { project } = get();
-      const factory = FACTORY_LOOPS[project.activeSlot];
-      if (factory && isLoopEdited(project, project.activeSlot)) wipe(factory.pattern);
+      const factory = factoryLoop(project.activeSlot);
+      if (factory && isLoopEdited(project, project.activeSlot)) wipe(factory);
     },
 
     clearLoop() {
-      const current = activePattern(get().project);
-      if (!isEmptyPattern(current)) wipe(emptyPattern(current.bars));
+      const current = activeLoop(get().project);
+      if (!isLoopEmpty(current)) wipe(clearLoop(current));
+    },
+
+    clearLayer() {
+      const { project, selectedLayer } = get();
+      const current = activeLoop(project);
+      const layer = current.layers[selectedLayer];
+      if (layer && !isLayerEmpty(layer)) wipe(clearLayer(current, selectedLayer));
     },
 
     undoLoop() {
       const { undo, project } = get();
       if (!undo || undo.slot !== project.activeSlot) return;
-      set({ undo: { slot: undo.slot, pattern: activePattern(project) } });
+      set({ undo: { slot: undo.slot, loop: activeLoop(project) } });
       // Whatever is recorded next is a new recording, with its own Undo.
       takeSlot = null;
-      replaceActiveLoop(undo.pattern);
+      replaceActiveLoop(undo.loop);
     },
   };
 });
@@ -333,9 +368,9 @@ export function canUndoLoop(undo: LoopSnapshot | null, project: StudioProject): 
 
 /** Whether a slot's loop has been changed from the one it shipped with. */
 export function isLoopEdited(project: StudioProject, slot: number): boolean {
-  const factory = FACTORY_LOOPS[slot];
+  const factory = factoryLoop(slot);
   const current = project.slots[slot];
-  return !factory || !current || !patternsEqual(factory.pattern, current);
+  return !factory || !current || !loopsEqual(factory, current);
 }
 
 // An app on a tablet is put away, not closed: keep the last edit when that happens.

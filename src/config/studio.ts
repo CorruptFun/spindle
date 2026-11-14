@@ -12,10 +12,19 @@ export interface StudioModeFeatures {
   readonly tempo: boolean;
   readonly stepEditor: boolean;
   readonly swing: boolean;
+  /** The layer boxes. Without them every layer still plays; there is just no choosing one. */
+  readonly layers: boolean;
 }
 
 export const STUDIO_MODES: Readonly<Record<SkillMode, StudioModeFeatures>> = {
-  play: { names: false, record: false, tempo: false, stepEditor: false, swing: false },
-  mix: { names: true, record: true, tempo: true, stepEditor: true, swing: false },
-  pro: { names: true, record: true, tempo: true, stepEditor: true, swing: true },
+  play: {
+    names: false,
+    record: false,
+    tempo: false,
+    stepEditor: false,
+    swing: false,
+    layers: false,
+  },
+  mix: { names: true, record: true, tempo: true, stepEditor: true, swing: false, layers: true },
+  pro: { names: true, record: true, tempo: true, stepEditor: true, swing: true, layers: true },
 };
