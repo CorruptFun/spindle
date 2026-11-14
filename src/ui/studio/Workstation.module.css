@@ -1,0 +1,81 @@
+/*
+ * The Studio as a small workstation, on a desk-sized screen. Top to bottom:
+ * the shelf, the song, the whole beat as a grid, and a deck holding the pads,
+ * the transport and the level.
+ *
+ * The shelf and the song take what they need. The grid takes the height that
+ * is left, up to keys of a comfortable height; the deck takes what is left
+ * after that, up to pads two fingers tall. The grid and the pads are pinned to
+ * boxes whose size the layout decides, never their contents, so nothing can
+ * spill and nothing scrolls.
+ *
+ * The smallest desk-sized screen, 1280 by 720, leaves the room 1222 by 605
+ * inside its edge. Down: shelf 61, song 50, deck 104 and three gaps of 12
+ * leave the grid 354, which is its header 48 + 8, the beat numbers 16 + 4, and
+ * eight rows of 31 with seven gaps of 4. Across: the deck is pads 432,
+ * transport about 719 at its widest (Pro), meter 16 and two gaps of 24, 1215
+ * in all; were the transport any wider, the pads would give way to it. Rows 31
+ * tall show one bar, in keys 65 wide. Both bars need the grid 488 tall
+ * (BeatGrid.module.css), which a screen about 860 tall gives it.
+ *
+ * Nothing here asks how big the screen is. The layout that renders this
+ * decides that, once, so the parts on the page and their styles cannot disagree.
+ */
+.bench {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  /* Only a very tall window has height left over once every part is as big as it gets. */
+  justify-content: center;
+  gap: var(--space-3);
+  min-width: 0;
+  min-height: 0;
+}
+
+.song {
+  flex: none;
+}
+
+/* Before the deck grows at all, the grid has all the height it can use. */
+.beat {
+  position: relative;
+  flex: 1000 1 0;
+  min-height: 0;
+  /* Rows a little over --touch-min tall. Taller keys than that are only stretched. */
+  max-height: calc(13 * var(--touch-min));
+}
+
+.deck {
+  display: flex;
+  flex: 1 1 calc(2 * var(--touch-min) + var(--space-2));
+  align-items: stretch;
+  justify-content: space-between;
+  gap: var(--space-5);
+  min-height: calc(2 * var(--touch-min) + var(--space-2));
+  max-height: calc(4 * var(--touch-min) + var(--space-2));
+}
+
+/* Four pads across, each wide enough for its key and its name; narrower if the transport needs the room. */
+.pads {
+  position: relative;
+  flex: 0 1 calc(9 * var(--touch-min));
+  min-width: calc(4 * var(--touch-min) + 3 * var(--space-2));
+}
+
+.beat > *,
+.pads > * {
+  position: absolute;
+  inset: 0;
+}
+
+.transport {
+  display: flex;
+  flex: none;
+  align-items: center;
+}
+
+/* The level stands at the end of the deck, like the meter at the end of a mixer. */
+.meter {
+  display: flex;
+  flex: none;
+}

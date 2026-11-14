@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ModeDefinition } from '@/config/modes';
 import { STUDIO_MODES } from '@/config/studio';
 import { STEPS_PER_BAR } from '@/engine/sequencer/types';
@@ -16,14 +16,20 @@ import {
   type StudioLoop,
 } from '@/studio';
 import { LevelMeter } from '@/ui/components/LevelMeter';
+import { BeatGrid } from '@/ui/studio/BeatGrid';
+import { PAD_KEYS } from '@/ui/studio/keys';
 import { KitPicker } from '@/ui/studio/KitPicker';
 import { LayerStrip } from '@/ui/studio/LayerStrip';
 import { LoopSlots } from '@/ui/studio/LoopSlots';
-import { PadGrid } from '@/ui/studio/PadGrid';
+import { PadGrid, type PadGridHandle } from '@/ui/studio/PadGrid';
 import { SongSheet } from '@/ui/studio/SongSheet';
+import { SongStrip } from '@/ui/studio/SongStrip';
 import { StepRow } from '@/ui/studio/StepRow';
 import { TransportBar } from '@/ui/studio/TransportBar';
+import { useStudioKeys } from '@/ui/studio/use-studio-keys';
+import { Workstation } from '@/ui/studio/Workstation';
 import styles from './Studio.module.css';
+import { useIsDesktop } from './use-desktop';
 
 /**
  * Mixes, kept per loop. Loops are never changed in place, so a loop that has
@@ -40,9 +46,16 @@ function mixOf(loop: StudioLoop): DrumPattern {
   return mix;
 }
 
-/** The drum machine: a kit, eight loops, eight pads, four layers, and the transport. */
+/**
+ * The drum machine: a kit, eight loops, eight pads, four layers, and the
+ * transport. On a desk-sized screen Mix and Pro lay the same parts out as a
+ * small workstation, with the whole beat as a grid and the song on screen.
+ */
 export function Studio({ mode }: { mode: ModeDefinition }) {
   const features = STUDIO_MODES[mode.id];
+  const desktop = useIsDesktop();
+  // The workstation is for the modes that edit steps. Play stays the instrument it is.
+  const desk = desktop && features.stepEditor;
   const engine = useBooth((state) => state.engine);
   const engineFailed = useBooth((state) => state.engineFailed);
 
@@ -65,6 +78,7 @@ export function Studio({ mode }: { mode: ModeDefinition }) {
   const selectLayer = useStudio((state) => state.selectLayer);
   const clearLayer = useStudio((state) => state.clearLayer);
   const toggleStep = useStudio((state) => state.toggleStep);
+  const toggleStepAt = useStudio((state) => state.toggleStepAt);
   const setBar = useStudio((state) => state.setBar);
   const setTempo = useStudio((state) => state.setTempo);
   const setSwing = useStudio((state) => state.setSwing);
@@ -86,6 +100,11 @@ export function Studio({ mode }: { mode: ModeDefinition }) {
   useEffect(() => {
     if (!features.record) stopRecording();
   }, [features.record, stopRecording]);
+
+  // At the desk the song is on screen. A sheet left open must not come back when the window shrinks.
+  useEffect(() => {
+    if (desk) setSongOpen(false);
+  }, [desk]);
 
   const kit = KITS.find((known) => known.id === project.kitId) ?? KITS[0];
   const loop = project.slots[project.activeSlot];
@@ -111,9 +130,47 @@ export function Studio({ mode }: { mode: ModeDefinition }) {
     [loop],
   );
 
+  // For the grid of the whole beat: every pad's lane as the layers that are not chosen play it.
+  const otherLanes = useMemo(
+    () =>
+      desk && loop
+        ? (loop.layers[selectedLayer]?.pattern.lanes ?? []).map((_, pad) =>
+            otherLayersLane(loop, selectedLayer, pad),
+          )
+        : [],
+    [desk, loop, selectedLayer],
+  );
+
   const readGlow = useCallback((pad: number) => engine?.pads.glow(pad) ?? 0, [engine]);
   const readStep = useCallback(() => engine?.sequencer.stepPosition() ?? -1, [engine]);
   const readLevel = useCallback(() => engine?.mixer.padsLevel() ?? 0, [engine]);
+
+  // Hits that do not start on a pad (a key on the keyboard, a row's name in the grid) still go
+  // through the pads, so the pad lights and goes down as if it had been touched.
+  const pads = useRef<PadGridHandle>(null);
+  const playPad = useCallback(
+    (pad: number) => {
+      if (pads.current) pads.current.hit(pad);
+      else hitPad(pad);
+    },
+    [hitPad],
+  );
+
+  useStudioKeys(!engineFailed, {
+    features: { record: features.record, layers: features.layers, undo: features.stepEditor },
+    onPlay: togglePlay,
+    onRecord: toggleRecord,
+    // Only when the Undo cap would do something: Undo also leaves the song.
+    onUndo: () => {
+      if (canUndoLoop(undo, project)) undoLoop();
+    },
+    onLayer: selectLayer,
+    onPadDown: (pad) => {
+      if (pads.current) pads.current.press(pad);
+      else hitPad(pad);
+    },
+    onPadUp: (pad) => pads.current?.release(pad),
+  });
 
   if (engineFailed) {
     return (
@@ -124,6 +181,124 @@ export function Studio({ mode }: { mode: ModeDefinition }) {
     );
   }
   if (!kit || !loop) return null;
+
+  const chosenLayer = layers[selectedLayer];
+
+  const shelf = (
+    <div className={styles.shelf}>
+      <KitPicker
+        kits={KITS}
+        active={kit.id}
+        busy={!kitReady}
+        showNames={features.names}
+        onPick={pickKit}
+      />
+      <LoopSlots
+        slots={slots}
+        active={project.activeSlot}
+        queued={queuedSlot}
+        playing={playing}
+        showNames={features.names}
+        onSelect={selectSlot}
+      />
+    </div>
+  );
+
+  const layerKeys = features.layers ? (
+    <LayerStrip
+      layers={layers}
+      selected={selectedLayer}
+      recording={recording}
+      canClear={chosenLayer !== undefined && !chosenLayer.empty}
+      onSelect={selectLayer}
+      onClear={clearLayer}
+    />
+  ) : undefined;
+
+  /** The transport, with or without the cap that opens the song sheet. */
+  const transport = (showSong: boolean) => (
+    <TransportBar
+      playing={playing}
+      recording={recording}
+      bpm={project.bpm}
+      swing={project.swing}
+      showRecord={features.record}
+      showTempo={features.tempo}
+      showSwing={features.swing}
+      showLoopTools={features.stepEditor}
+      showSong={showSong}
+      songPlaying={songPlaying}
+      canUndo={canUndoLoop(undo, project)}
+      canClear={!isLoopEmpty(loop)}
+      canReset={isLoopEdited(project, project.activeSlot)}
+      onTogglePlay={togglePlay}
+      onToggleRecord={toggleRecord}
+      onTempoChange={setTempo}
+      onSwingChange={setSwing}
+      onUndo={undoLoop}
+      onClear={clearLoop}
+      onReset={resetLoop}
+      onSong={openSong}
+    />
+  );
+
+  if (desk) {
+    return (
+      <section className={styles.studio} data-mode={mode.id} data-desk="true" aria-label="Studio">
+        <Workstation
+          shelf={shelf}
+          song={
+            features.song ? (
+              // The song's tiles share the loop tiles' cached mixes.
+              <SongStrip
+                loops={slots}
+                song={project.song}
+                position={songPosition}
+                playing={songPlaying}
+                current={project.activeSlot}
+                onAdd={addToSong}
+                onRemove={removeFromSong}
+                onClear={clearSong}
+                onTogglePlay={toggleSong}
+              />
+            ) : undefined
+          }
+          beat={
+            <BeatGrid
+              pads={kit.pads}
+              lanes={loop.layers[selectedLayer]?.pattern.lanes ?? []}
+              otherLanes={otherLanes}
+              bars={loop.bars}
+              bar={bar}
+              onBarChange={setBar}
+              selected={selectedPad}
+              headerSlot={layerKeys}
+              readStep={readStep}
+              running={playing}
+              onHit={playPad}
+              onToggle={toggleStepAt}
+            />
+          }
+          pads={
+            <PadGrid
+              ref={pads}
+              pads={kit.pads}
+              readGlow={readGlow}
+              onHit={hitPad}
+              running={playing}
+              selected={selectedPad}
+              showNames={features.names}
+              compact
+              keyCaps={PAD_KEYS}
+            />
+          }
+          // The song is on screen here, so the transport needs no way to it.
+          transport={transport(false)}
+          meter={<LevelMeter read={readLevel} label="Drums level" />}
+        />
+      </section>
+    );
+  }
 
   // A one-bar loop has no second bar to show.
   const shownBar = Math.min(bar, loop.bars - 1);
@@ -138,36 +313,22 @@ export function Studio({ mode }: { mode: ModeDefinition }) {
     from,
     from + STEPS_PER_BAR,
   );
-  const chosenLayer = layers[selectedLayer];
 
   return (
     <section className={styles.studio} data-mode={mode.id} aria-label="Studio">
-      <div className={styles.shelf}>
-        <KitPicker
-          kits={KITS}
-          active={kit.id}
-          busy={!kitReady}
-          showNames={features.names}
-          onPick={pickKit}
-        />
-        <LoopSlots
-          slots={slots}
-          active={project.activeSlot}
-          queued={queuedSlot}
-          playing={playing}
-          showNames={features.names}
-          onSelect={selectSlot}
-        />
-      </div>
+      {shelf}
 
       <div className={styles.pads}>
         <PadGrid
+          ref={pads}
           pads={kit.pads}
           readGlow={readGlow}
           onHit={hitPad}
           running={playing}
           selected={features.stepEditor ? selectedPad : null}
           showNames={features.names}
+          // Only a desk-sized screen is likely to have a keyboard in front of it.
+          keyCaps={desktop ? PAD_KEYS : undefined}
         />
       </div>
 
@@ -177,18 +338,7 @@ export function Studio({ mode }: { mode: ModeDefinition }) {
             pad={editedPad}
             steps={steps}
             otherSteps={otherSteps}
-            headerSlot={
-              features.layers ? (
-                <LayerStrip
-                  layers={layers}
-                  selected={selectedLayer}
-                  recording={recording}
-                  canClear={chosenLayer !== undefined && !chosenLayer.empty}
-                  onSelect={selectLayer}
-                  onClear={clearLayer}
-                />
-              ) : undefined
-            }
+            headerSlot={layerKeys}
             bar={shownBar}
             bars={loop.bars}
             onBarChange={setBar}
@@ -200,29 +350,7 @@ export function Studio({ mode }: { mode: ModeDefinition }) {
       )}
 
       <div className={styles.transport}>
-        <TransportBar
-          playing={playing}
-          recording={recording}
-          bpm={project.bpm}
-          swing={project.swing}
-          showRecord={features.record}
-          showTempo={features.tempo}
-          showSwing={features.swing}
-          showLoopTools={features.stepEditor}
-          showSong={features.song}
-          songPlaying={songPlaying}
-          canUndo={canUndoLoop(undo, project)}
-          canClear={!isLoopEmpty(loop)}
-          canReset={isLoopEdited(project, project.activeSlot)}
-          onTogglePlay={togglePlay}
-          onToggleRecord={toggleRecord}
-          onTempoChange={setTempo}
-          onSwingChange={setSwing}
-          onUndo={undoLoop}
-          onClear={clearLoop}
-          onReset={resetLoop}
-          onSong={openSong}
-        />
+        {transport(features.song)}
         <div className={styles.meter}>
           <LevelMeter read={readLevel} label="Drums level" orientation="horizontal" />
         </div>

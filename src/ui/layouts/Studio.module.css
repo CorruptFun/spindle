@@ -69,3 +69,27 @@
     gap: var(--space-4);
   }
 }
+
+/*
+ * A desk-sized screen (the same test as use-desktop.ts). In Mix and Pro the
+ * room is laid out as a workstation, which has its own stylesheet
+ * (ui/studio/Workstation); here it only sits a little closer to the edge of
+ * the panel, to leave its grid more room.
+ */
+@media (min-width: 1280px) and (min-height: 720px) {
+  .studio[data-desk='true'] {
+    padding: var(--space-3);
+  }
+
+  /*
+   * Play mode keeps its layout. The pads stop growing at a size a hand can
+   * still cover, and sit in the middle of the room that is left.
+   */
+  .studio[data-mode='play'] .pads {
+    align-self: center;
+    width: 100%;
+    max-width: calc(14 * var(--touch-play));
+    max-height: calc(7 * var(--touch-play));
+    margin-block: auto;
+  }
+}

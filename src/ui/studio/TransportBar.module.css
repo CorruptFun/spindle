@@ -305,3 +305,14 @@
     gap: var(--space-2);
   }
 }
+
+/*
+ * A desk-sized screen (the same test as use-desktop.ts): everything fits on
+ * one line, and the line must never break in two, because the row it sits in
+ * is no taller than one.
+ */
+@media (min-width: 1280px) and (min-height: 720px) {
+  .bar {
+    flex-wrap: nowrap;
+  }
+}

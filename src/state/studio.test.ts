@@ -13,6 +13,8 @@ import {
   patternsEqual,
   PAD_ROLES,
   SONG_MAX,
+  STEP_ACCENT,
+  STEP_ON,
 } from '@/studio';
 import { canUndoLoop, isLoopEdited, useStudio } from './studio';
 
@@ -237,6 +239,7 @@ describe('the song', () => {
   it.each<[string, () => void]>([
     ['picking a loop', () => studio().selectSlot(3)],
     ['editing a step', () => studio().toggleStep(5)],
+    ['editing a step in the grid', () => studio().toggleStepAt(2, 21)],
     ['switching recording on', () => studio().toggleRecord()],
     ['clearing the loop', () => studio().clearLoop()],
     ['clearing a layer', () => studio().clearLayer()],
@@ -270,6 +273,69 @@ describe('the song', () => {
     // Choosing a different layer only chooses it.
     studio().selectLayer(2);
     expect(studio().songPlaying).toBe(true);
+  });
+});
+
+describe('editing a step in the grid', () => {
+  it('toggles any pad on any step of the loop, whichever pad and bar are shown', () => {
+    const shaker = pad('shaker');
+    useStudio.setState({ selectedPad: pad('kick'), bar: 0 });
+    // Step 3 of the second bar.
+    studio().toggleStepAt(shaker, 19);
+    expect(loop().layers[0]!.pattern.lanes[shaker]![19]).toBe(STEP_ON);
+    expect(sequencer.pattern.lanes[shaker]![19]).toBe(STEP_ON);
+    // Nothing else moved.
+    expect(loop().layers[0]!.pattern.lanes[pad('kick')]).toBe(
+      factory(0).layers[0]!.pattern.lanes[pad('kick')],
+    );
+    expect(studio().bar).toBe(0);
+  });
+
+  it('goes off, on, accented and off again, like a step key', () => {
+    const tom = pad('tom');
+    studio().toggleStepAt(tom, 2);
+    expect(loop().layers[0]!.pattern.lanes[tom]![2]).toBe(STEP_ON);
+    studio().toggleStepAt(tom, 2);
+    expect(loop().layers[0]!.pattern.lanes[tom]![2]).toBe(STEP_ACCENT);
+    studio().toggleStepAt(tom, 2);
+    expect(loop().layers[0]!.pattern.lanes[tom]![2]).toBe(0);
+    expect(loopsEqual(loop(), factory(0))).toBe(true);
+  });
+
+  it('writes into the chosen layer and leaves the others as they were', () => {
+    const clap = pad('clap');
+    studio().selectLayer(3);
+    studio().toggleStepAt(clap, 30);
+    expect(loop().layers[3]!.pattern.lanes[clap]![30]).toBe(STEP_ON);
+    expect(loop().layers[1]).toBe(factory(0).layers[1]);
+    expect(patternsEqual(sequencer.pattern, mix())).toBe(true);
+  });
+
+  it('selects the pad whose row was edited', () => {
+    studio().toggleStepAt(pad('open-hat'), 0);
+    expect(studio().selectedPad).toBe(pad('open-hat'));
+  });
+
+  it('does nothing for a pad or a step that is not there', () => {
+    const before = loop();
+    for (const [badPad, badStep] of [
+      [-1, 0],
+      [8, 0],
+      [1.5, 0],
+      [0, -1],
+      [0, 32],
+      [0, 2.5],
+      [Number.NaN, Number.NaN],
+    ] as const) {
+      studio().toggleStepAt(badPad, badStep);
+    }
+    expect(loop()).toBe(before);
+    expect(studio().selectedPad).toBe(0);
+  });
+
+  it('is not something Undo takes back, like any step edit', () => {
+    studio().toggleStepAt(pad('snare'), 9);
+    expect(studio().undo).toBeNull();
   });
 });
 

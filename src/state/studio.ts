@@ -112,6 +112,11 @@ interface StudioState {
   selectLayer: (layer: number) => void;
   /** Toggle a step of the selected pad, in the selected layer and the bar being shown. */
   toggleStep: (step: number) => void;
+  /**
+   * Toggle a step of any pad, in the selected layer; `step` counts from the start of the
+   * loop. For the grid that shows the whole beat at once. The pad becomes the selected one.
+   */
+  toggleStepAt: (pad: number, step: number) => void;
   setBar: (bar: number) => void;
   setTempo: (bpm: number) => void;
   setSwing: (swing: number) => void;
@@ -378,6 +383,17 @@ export const useStudio = create<StudioState>()((set, get) => {
       const loop = activeLoop(project);
       const next = toggleLayerStep(loop, selectedLayer, selectedPad, bar * STEPS_PER_BAR + step);
       if (next !== loop) replaceActiveLoop(next);
+    },
+
+    toggleStepAt(pad, step) {
+      leaveSong();
+      const { project, selectedLayer } = get();
+      const loop = activeLoop(project);
+      const next = toggleLayerStep(loop, selectedLayer, pad, step);
+      // No such pad or step: nothing to change, and nothing to select.
+      if (next === loop) return;
+      set({ selectedPad: pad });
+      replaceActiveLoop(next);
     },
 
     setBar(bar) {

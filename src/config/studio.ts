@@ -14,7 +14,10 @@ export interface StudioModeFeatures {
   readonly swing: boolean;
   /** The layer boxes. Without them every layer still plays; there is just no choosing one. */
   readonly layers: boolean;
-  /** Loops chained into a song, built in a sheet behind the Song button. */
+  /**
+   * Loops chained into a song: built in a sheet behind the Song button, or in a
+   * strip that is always on screen where the screen is desk-sized.
+   */
   readonly song: boolean;
 }
 

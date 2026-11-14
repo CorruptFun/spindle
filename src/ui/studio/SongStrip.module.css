@@ -1,0 +1,222 @@
+/*
+ * The song on screen. Its loops lie in playing order in a recessed lane, like
+ * tiles in a tray, with the cap that adds the next one at the end. The tiles
+ * are the song sheet's, lower; play and the bin are the transport's caps.
+ */
+.strip {
+  /* A tile is as wide as a loop's name needs, and gives way as the song fills the lane. */
+  --tile-width: calc(var(--touch-min) + var(--space-6) + var(--space-2));
+  --tile-height: calc(var(--touch-min) - var(--space-2));
+  --tile-radius: calc(var(--radius-control) - var(--space-1));
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+/* Hardware-style label. */
+.label {
+  flex: none;
+  color: var(--ink-dim);
+  font-size: var(--text-xs);
+  font-weight: 650;
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+}
+
+/* The slot the tiles lie in: recessed like the tempo window, round like the tiles in it. */
+.lane {
+  display: flex;
+  flex: 1 1 0;
+  gap: var(--space-1);
+  min-width: 0;
+  padding: var(--space-1);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-control);
+  background: var(--well);
+}
+
+/*
+ * As wide as its tiles at full width (`--entries` of them, set by the
+ * component) and their gaps, and narrower when the lane is: then the tiles
+ * share what there is.
+ */
+.entries {
+  display: flex;
+  flex: 0 1 calc(var(--entries) * (var(--tile-width) + var(--space-1)) - var(--space-1));
+  gap: var(--space-1);
+  min-width: 0;
+  /* A numbered list by nature; its order is plain to see. */
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Measured, so a tile too narrow for a name shows the picture alone. */
+.place {
+  flex: 0 1 var(--tile-width);
+  min-width: var(--touch-min);
+  container-type: inline-size;
+}
+
+/* A loop: its picture, its name underneath. Raised, and it goes down when pressed. */
+.tile {
+  --ring: 2px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+  height: var(--tile-height);
+  min-width: 0;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--hairline);
+  border-radius: var(--tile-radius);
+  background: var(--panel-raised);
+  cursor: pointer;
+  transition:
+    border-color var(--dur) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+@media (hover: hover) {
+  .tile:hover,
+  .add:hover {
+    border-color: var(--ink-faint);
+  }
+}
+
+.tile:active,
+.add:active {
+  transform: scale(0.96);
+}
+
+/* The ring for the entry being heard, drawn outside the hairline as on the loop tiles. */
+.tile::after {
+  content: '';
+  position: absolute;
+  inset: calc(-1 * var(--ring));
+  border: var(--ring) solid transparent;
+  border-radius: calc(var(--tile-radius) + var(--ring) - 1px);
+  pointer-events: none;
+  transition: border-color var(--dur) var(--ease-out);
+}
+
+.tile[data-active='true']::after {
+  border-color: var(--ink);
+}
+
+.name {
+  overflow: hidden;
+  color: var(--ink-dim);
+  font-size: var(--text-xs);
+  font-weight: 650;
+  line-height: 1.2;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tile[data-active='true'] .name {
+  color: var(--ink);
+}
+
+@container (max-width: 79px) {
+  .name {
+    display: none;
+  }
+}
+
+/* The next place in the song: a cap the shape of a tile, with a plus on it. */
+.add {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--touch-min);
+  height: var(--tile-height);
+  padding: 0;
+  border: 1px solid var(--hairline);
+  border-radius: var(--tile-radius);
+  background: var(--panel-raised);
+  color: var(--ink);
+  cursor: pointer;
+  transition:
+    border-color var(--dur) var(--ease-out),
+    opacity var(--dur) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.add .mark {
+  width: calc(var(--space-5) - var(--space-1));
+  height: calc(var(--space-5) - var(--space-1));
+}
+
+/* Play / stop and the bin: the transport's round caps. */
+.play,
+.clear {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--touch-min);
+  height: var(--touch-min);
+  padding: 0;
+  border: 1px solid var(--hairline);
+  border-radius: 50%;
+  background: var(--panel-raised);
+  color: var(--ink);
+  cursor: pointer;
+  transition:
+    background-color var(--dur) var(--ease-out),
+    border-color var(--dur) var(--ease-out),
+    color var(--dur) var(--ease-out),
+    opacity var(--dur) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.play svg {
+  width: 44%;
+  height: 44%;
+  fill: currentColor;
+}
+
+/* The song is playing: a light cap, like the pressed play button. */
+.play[aria-pressed='true'] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--chassis);
+}
+
+.clear .mark {
+  width: 44%;
+  height: 44%;
+}
+
+.play:active,
+.clear:active {
+  transform: scale(0.94);
+}
+
+/* Nothing to play or clear, or no room for another loop: the cap stays, faded, and does nothing. */
+.play[aria-disabled='true'],
+.clear[aria-disabled='true'],
+.add[aria-disabled='true'] {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.play[aria-disabled='true']:active,
+.clear[aria-disabled='true']:active,
+.add[aria-disabled='true']:active {
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile:active,
+  .add:active,
+  .play:active,
+  .clear:active {
+    transform: none;
+  }
+}
