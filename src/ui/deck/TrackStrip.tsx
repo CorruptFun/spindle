@@ -18,6 +18,8 @@ interface TrackStripProps {
   isMoving: (() => boolean) | null;
   /** Open the song picker for this deck. */
   onChoose: () => void;
+  /** Leave out the time left and the progress line, where a waveform nearby already shows them. */
+  compact?: boolean;
 }
 
 /** How often a deck that is not turning is checked for a change of position. */
@@ -46,6 +48,7 @@ export function TrackStrip({
   playing,
   isMoving,
   onChoose,
+  compact = false,
 }: TrackStripProps) {
   const timeRef = useRef<HTMLSpanElement>(null);
   const progressRef = useRef<HTMLSpanElement>(null);
@@ -53,7 +56,8 @@ export function TrackStrip({
 
   // Before paint, so a new track never flashes the old time.
   useLayoutEffect(() => {
-    if (state !== 'loaded') return;
+    // Nothing to write while there is no track, or no time and progress line to write to.
+    if (state !== 'loaded' || compact) return;
     let shownTime = '';
     let shownProgress = -1;
     let frame = 0;
@@ -90,7 +94,7 @@ export function TrackStrip({
       cancelAnimationFrame(frame);
       window.clearTimeout(idleCheck);
     };
-  }, [state, track, readPositionSec, durationSec, playing, isMoving]);
+  }, [state, compact, track, readPositionSec, durationSec, playing, isMoving]);
 
   return (
     <button
@@ -125,10 +129,14 @@ export function TrackStrip({
           <span className={styles.title} aria-hidden="true">
             {track.title}
           </span>
-          <span ref={timeRef} className={styles.time} aria-hidden="true" />
-          <span className={styles.line} aria-hidden="true">
-            <span ref={progressRef} className={styles.progress} />
-          </span>
+          {!compact && (
+            <>
+              <span ref={timeRef} className={styles.time} aria-hidden="true" />
+              <span className={styles.line} aria-hidden="true">
+                <span ref={progressRef} className={styles.progress} />
+              </span>
+            </>
+          )}
         </>
       )}
     </button>

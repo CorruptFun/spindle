@@ -1,5 +1,10 @@
 import { create } from 'zustand';
-import { computePeaks, type WaveformPeaks } from '@/analysis/peaks';
+import {
+  computeDetailPeaks,
+  computePeaks,
+  type DetailPeaks,
+  type WaveformPeaks,
+} from '@/analysis/peaks';
 import { createAudioEngine, type AudioEngine } from '@/engine/AudioEngine';
 import { DECK_IDS, type DeckId } from '@/engine/core/types';
 import { clamp } from '@/lib/audio-math';
@@ -56,6 +61,10 @@ interface BoothState {
   tracks: PerDeck<TrackMeta | null>;
   /** The shape of each deck's track, for its waveform. */
   peaks: PerDeck<WaveformPeaks | null>;
+  /** The same track up close, for the waveform that scrolls past the needle. */
+  detail: PerDeck<DetailPeaks | null>;
+  /** Whether each deck's track plays round and round, so that its picture comes round again too. */
+  looping: PerDeck<boolean>;
   /** The track each deck is busy loading, if any. */
   loading: PerDeck<TrackRef | null>;
   /** 0 = bottom, 1 = top. */
@@ -108,7 +117,9 @@ let booting: Promise<void> | null = null;
  * Anything that changes every frame is read from the engine directly.
  */
 export const useBooth = create<BoothState>()((set, get) => {
-  const setDeck = <K extends 'playing' | 'tracks' | 'peaks' | 'loading' | 'channelFaders'>(
+  const setDeck = <
+    K extends 'playing' | 'tracks' | 'peaks' | 'detail' | 'looping' | 'loading' | 'channelFaders',
+  >(
     key: K,
     deck: DeckId,
     value: BoothState[K][DeckId],
@@ -128,10 +139,13 @@ export const useBooth = create<BoothState>()((set, get) => {
     try {
       const track = await produce(engine);
       if (!sameTrack(get().loading[deck], ref)) return; // a newer choice took over
-      // Drawn from the samples, so it has to be worked out before the deck takes them away.
+      // Drawn from the samples, so both have to be worked out before the deck takes them away.
       const peaks = computePeaks(track.audio);
+      const detail = computeDetailPeaks(track.audio);
       engine.deck(deck).load(track.audio, { loop: track.loop });
       setDeck('peaks', deck, peaks);
+      setDeck('detail', deck, detail);
+      setDeck('looping', deck, track.loop);
       setDeck('tracks', deck, track.meta);
       setDeck('loading', deck, null);
       if (get().pickerDeck === deck) set({ pickerDeck: null });
@@ -168,6 +182,8 @@ export const useBooth = create<BoothState>()((set, get) => {
     playing: perDeck(false),
     tracks: perDeck<TrackMeta | null>(null),
     peaks: perDeck<WaveformPeaks | null>(null),
+    detail: perDeck<DetailPeaks | null>(null),
+    looping: perDeck(false),
     loading: perDeck<TrackRef | null>(null),
     channelFaders: perDeck(1),
     crossfader: 0.5,

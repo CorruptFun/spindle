@@ -4,7 +4,8 @@
   position: relative;
   /* For browsers that cannot measure the deck's space: sized from the window instead. */
   width: min(100% - 2 * var(--ring-room), var(--platter-max, 320px));
-  max-width: 440px;
+  /* A room with space to spare may let the record grow further. */
+  max-width: var(--platter-cap, 440px);
   aspect-ratio: 1;
   border-radius: 50%;
   cursor: grab;

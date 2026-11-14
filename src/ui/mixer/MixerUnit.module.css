@@ -1,0 +1,47 @@
+/*
+ * The mixer, standing between the decks and as deep as they are. A hairline
+ * down each side marks where it ends and a deck begins; it is a part of the
+ * booth's one panel, not a panel of its own. The strips take the height there
+ * is, up to the length a real fader could be, and the whole group then sits
+ * level with the records.
+ */
+.mixer {
+  /* 336 px: a fader travel of 300. Much longer and it stops looking like a fader. */
+  --channels-max: calc(var(--touch-min) * 7);
+  /* 288 px, so the crossfader keeps a useful travel when there are only two strips above it. */
+  --output-min: calc(var(--touch-min) * 6);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-4);
+  min-width: 0;
+  min-height: 0;
+  padding: 0 var(--space-3);
+  border-right: 1px solid var(--hairline);
+  border-left: 1px solid var(--hairline);
+}
+
+/* The strips share the width evenly: side by side with four, spread out with two. */
+.channels {
+  display: flex;
+  flex: 1 1 0;
+  justify-content: space-evenly;
+  gap: var(--space-3);
+  min-height: 0;
+  max-height: var(--channels-max);
+}
+
+/* What leaves the mixer: the level of the finished mix, and the fader that blends the two sides. */
+.output {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: var(--output-min);
+}
+
+/* Lines up with the crossfader's slot, between the deck letters at either end. */
+.master {
+  padding: 0
+    calc(var(--ends, 1) * var(--space-5) + (var(--ends, 1) - 1) * var(--space-1) + var(--space-3));
+}

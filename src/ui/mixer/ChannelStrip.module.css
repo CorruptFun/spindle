@@ -1,0 +1,12 @@
+/*
+ * The meter stands the full height of the strip, beside the fader and its
+ * badge. The strip itself is stretched by the row of strips it stands in.
+ */
+.strip {
+  display: flex;
+  flex: none;
+  align-items: stretch;
+  align-self: stretch;
+  gap: var(--space-2);
+  min-height: 0;
+}

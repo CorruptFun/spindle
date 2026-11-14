@@ -1,0 +1,126 @@
+/*
+ * One deck's music up close. The waveform sits in a recessed lane like the
+ * overview's (same well, same hairline); the deck's letter and the track's name
+ * are printed on the panel before it and the time left after it, as labels are
+ * beside a display window on hardware. The two sides are the same width, so
+ * the "now" line is in the middle of the booth, above the middle of the mixer.
+ *
+ * The lane is as tall as its parent makes it. Left to itself it is 40 px, the
+ * least a finger can drag with any comfort.
+ */
+.lane {
+  --presence: 1;
+  /* 144 px: the badge and about fifteen letters of a name. */
+  --lane-side: calc(var(--touch-min) * 3);
+  display: grid;
+  grid-template-columns: var(--lane-side) minmax(0, 1fr) var(--lane-side);
+  grid-template-rows: minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  min-height: calc(var(--space-6) + var(--space-2));
+}
+
+/* A wide screen has room for more of the name. */
+@media (min-width: 1600px) {
+  .lane {
+    --lane-side: calc(var(--touch-min) * 4);
+  }
+}
+
+.name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+/* The same badge as on the deck's track strip and its fader. */
+.badge {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--space-5);
+  height: var(--space-5);
+  border-radius: var(--radius-cap);
+  background: var(--deck);
+  color: var(--chassis);
+  font-size: var(--text-s);
+  font-weight: 800;
+}
+
+.title {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: var(--text-s);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Time left: the one number a DJ watches, so it is the larger figure. */
+.time {
+  justify-self: end;
+  color: var(--ink);
+  font-size: var(--text-l);
+  font-weight: 650;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * The window the waveform scrolls through. The colours are read by the
+ * drawing code from the custom properties below, so they stay here with the
+ * other tokens.
+ */
+.well {
+  --lane-wave: var(--deck, var(--ink));
+  --lane-now: var(--ink);
+  /* What has gone by is covered with this much of the well's own colour. */
+  --lane-shade: var(--well);
+  --lane-played-shade: 0.55;
+  /* Kept clear above and below the loudest peak. */
+  --lane-pad: var(--space-1);
+  position: relative;
+  align-self: stretch;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-cap);
+  background: var(--well);
+  cursor: grab;
+  /* A drag on the lane moves the needle; it must not scroll or zoom the page. */
+  touch-action: none;
+  -webkit-touch-callout: none;
+  transition: border-color var(--dur) var(--ease-out);
+}
+
+.well[data-state='loaded']:hover {
+  border-color: var(--ink-faint);
+}
+
+.well[data-state='loaded']:active {
+  cursor: grabbing;
+}
+
+/* Nothing to move. */
+.well[data-state='empty'] {
+  cursor: default;
+  touch-action: auto;
+}
+
+/*
+ * Sized from the well, never from its own drawing buffer. It dims as the
+ * crossfader or the deck's own fader takes the deck out of the mix, though
+ * never so far that the next track cannot be lined up by eye.
+ */
+.canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: calc(0.5 + 0.5 * var(--presence, 1));
+  pointer-events: none;
+  transition: opacity var(--dur-fast) linear;
+}

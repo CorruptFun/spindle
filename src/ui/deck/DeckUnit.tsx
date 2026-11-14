@@ -30,6 +30,15 @@ interface DeckUnitProps {
   onSeek: (positionSec: number) => void;
   /** Something was dropped on the deck (the integrator filters for audio files). */
   onDropData?: (data: DataTransfer) => void;
+  /**
+   * Set on a desk-sized screen, where a close-up waveform elsewhere carries the
+   * track's name and time: the deck's own strip then leaves them out. `wide`
+   * also puts the strip and the overview side by side, for a deck with the
+   * width to spare, which leaves the record more of the height.
+   */
+  desk?: 'narrow' | 'wide';
+  /** A hand or a key landed on this deck. */
+  onTouch?: () => void;
 }
 
 function carriesFiles(event: DragEvent): boolean {
@@ -50,6 +59,8 @@ export function DeckUnit({
   peaks,
   onSeek,
   onDropData,
+  desk,
+  onTouch,
 }: DeckUnitProps) {
   const [dragOver, setDragOver] = useState(false);
   // dragenter and dragleave fire for every child crossed, so count them.
@@ -89,35 +100,54 @@ export function DeckUnit({
       }
     : {};
 
+  const strip = (
+    <TrackStrip
+      deck={deck}
+      track={track}
+      loading={loading}
+      readPositionSec={hasTrack ? readPositionSec : null}
+      durationSec={durationSec}
+      playing={playing}
+      isMoving={hasTrack ? isMoving : null}
+      onChoose={onChooseTrack}
+      compact={desk !== undefined}
+    />
+  );
+
+  const wave = (
+    <div className={styles.wave}>
+      <Waveform
+        peaks={hasTrack ? peaks : null}
+        readPositionSec={hasTrack ? readPositionSec : null}
+        isMoving={hasTrack ? isMoving : null}
+        playing={playing}
+        onSeek={onSeek}
+        label={`Deck ${deck} position`}
+      />
+    </div>
+  );
+
   return (
     <section
       className={styles.unit}
       aria-label={`Deck ${deck}`}
       style={deckStyle(deck, presence)}
       data-drop={dragOver}
+      onPointerDownCapture={onTouch}
+      onKeyDownCapture={onTouch}
       {...dropHandlers}
     >
-      <TrackStrip
-        deck={deck}
-        track={track}
-        loading={loading}
-        readPositionSec={hasTrack ? readPositionSec : null}
-        durationSec={durationSec}
-        playing={playing}
-        isMoving={hasTrack ? isMoving : null}
-        onChoose={onChooseTrack}
-      />
-
-      <div className={styles.wave}>
-        <Waveform
-          peaks={hasTrack ? peaks : null}
-          readPositionSec={hasTrack ? readPositionSec : null}
-          isMoving={hasTrack ? isMoving : null}
-          playing={playing}
-          onSeek={onSeek}
-          label={`Deck ${deck} position`}
-        />
-      </div>
+      {desk ? (
+        <div className={styles.head} data-wide={desk === 'wide'}>
+          <div className={styles.key}>{strip}</div>
+          {wave}
+        </div>
+      ) : (
+        <>
+          {strip}
+          {wave}
+        </>
+      )}
 
       <div className={styles.platter}>
         <Platter deck={deck} control={control} playing={playing} />

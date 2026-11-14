@@ -152,3 +152,98 @@
     flex-direction: row-reverse;
   }
 }
+
+/*
+ * A desk-sized screen (the same test as use-desktop.ts). Nothing here scrolls
+ * either: every row that is not a fixed height is allowed to shrink to nothing,
+ * so the booth always fits the room it is given.
+ */
+@media (min-width: 1280px) and (min-height: 720px) {
+  .booth {
+    /* 504 px. There is room for a bigger record here, and a mouse to hold it with. */
+    --platter-cap: calc(var(--touch-play) * 7);
+  }
+
+  /*
+   * Play stays the simple instrument it is everywhere else. A deck is given
+   * only the width and height its record needs at full size, and the two decks
+   * and the crossfader sit together in the middle of the panel, so they are
+   * never lost on a big screen.
+   */
+  .booth[data-mode='play'] {
+    grid-template-columns: repeat(2, minmax(0, calc(var(--platter-cap) + var(--space-7))));
+    /* The record with its ring, the track strip, the overview, the play button, and the gaps between. */
+    grid-template-rows:
+      minmax(
+        0,
+        calc(
+          var(--platter-cap) + var(--space-5) + 2 * var(--touch-min) + var(--transport-size) + 3 *
+            var(--space-3)
+        )
+      )
+      auto;
+    place-content: center;
+  }
+
+  /*
+   * Mix and Pro as a DJ set-up: a close-up waveform for every deck across the
+   * top, then the decks with the mixer standing between them. The waveforms
+   * are a fixed height and the decks get the rest, up to the most a deck can
+   * use; beyond that the booth sits in the middle of its panel.
+   */
+  .booth[data-desk='true'] {
+    /* Two lanes of 72 px. Whole pixels, here and below, so the drawing in them stays sharp. */
+    --lane-height: calc(var(--touch-min) * 1.5);
+    /* 672 px: the tallest a deck gets with its record at full size. */
+    --deck-row-max: calc(var(--touch-min) * 14);
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, var(--deck-row-max));
+    grid-template-areas:
+      'lanes lanes lanes'
+      'left console right';
+    align-content: center;
+  }
+
+  /* Four lanes of 44 px. */
+  .booth[data-desk='true'][data-mode='pro'] {
+    --lane-height: calc(var(--space-1) * 11);
+  }
+
+  /* A taller screen gives the lanes more: 96 px and 56 px, then 120 px and 68 px. */
+  @media (min-height: 880px) {
+    .booth[data-desk='true'] {
+      --lane-height: calc(var(--touch-min) * 2);
+    }
+
+    .booth[data-desk='true'][data-mode='pro'] {
+      --lane-height: calc(var(--space-1) * 14);
+    }
+  }
+
+  @media (min-height: 1040px) {
+    .booth[data-desk='true'] {
+      --lane-height: calc(var(--touch-min) * 2.5);
+    }
+
+    .booth[data-desk='true'][data-mode='pro'] {
+      --lane-height: calc(var(--space-1) * 17);
+    }
+  }
+
+  /* The close-up waveforms, one lane for each deck, in the order the decks sit. */
+  .lanes {
+    grid-area: lanes;
+    display: grid;
+    grid-auto-rows: var(--lane-height);
+    gap: var(--space-2);
+    min-width: 0;
+  }
+
+  /* Where the mixer stands. It is as deep as the decks beside it. */
+  .console {
+    grid-area: console;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr);
+    min-height: 0;
+  }
+}

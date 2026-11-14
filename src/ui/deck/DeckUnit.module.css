@@ -22,6 +22,38 @@
 }
 
 /*
+ * On a desk-sized screen the key that opens the song picker and the overview
+ * make one block at the head of the deck: one above the other on a narrow
+ * deck, side by side on a wide one.
+ */
+.head {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-self: stretch;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.head[data-wide='true'] {
+  flex-direction: row;
+}
+
+/* The track strip stretches across this, as it does across a deck, whichever way the block is laid out. */
+.key {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.head[data-wide='true'] .key,
+.head[data-wide='true'] .wave {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+}
+
+/*
  * The space the record lives in. It is measured, so the record can be exactly
  * as large as fits both ways: a tall narrow deck and a short wide one each get
  * the biggest round record they can hold.
