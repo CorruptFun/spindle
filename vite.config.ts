@@ -101,6 +101,13 @@ export default defineConfig({
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
   worker: { format: 'es' },
+  build: {
+    // Stylesheets are written for older tablets than the scripts need. Left at the default,
+    // the minifier rewrites every screen-size rule in the short form (`width >= 900px`), which
+    // Safari only understands from 16.4: an older iPad would then ignore every one of them and
+    // show the phone layout. With this they stay as `min-width` / `max-width`.
+    cssTarget: ['chrome100', 'firefox100', 'safari15'],
+  },
   test: {
     include: ['src/**/*.test.ts'],
     environment: 'node',
