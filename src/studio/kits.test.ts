@@ -29,16 +29,16 @@ const kitSounds = (id: string): PadSound[] => rendered.get(id)!;
 const roleIndex = (role: string): number => PAD_ROLES.findIndex((r) => r.role === role);
 
 describe('KITS', () => {
-  it('has three kits with unique ids, names and glyphs', () => {
-    expect(KITS).toHaveLength(3);
+  it('has four kits with unique ids, names and glyphs', () => {
+    expect(KITS).toHaveLength(4);
     for (const key of ['id', 'name', 'glyph'] as const) {
-      expect(new Set(KITS.map((k) => k[key])).size).toBe(3);
+      expect(new Set(KITS.map((k) => k[key])).size).toBe(4);
     }
   });
 
-  it('names every kit and pad with one short word', () => {
+  it('names every kit and pad with one short word, or the number the machine is known by', () => {
     for (const kit of KITS) {
-      expect(kit.name).toMatch(/^[A-Z][a-z]{1,9}$/);
+      expect(kit.name).toMatch(/^([A-Z][a-z]{1,9}|[0-9]{3})$/);
       for (const pad of kit.pads) expect(pad.name).toMatch(/^[A-Z][a-z]{1,9}$/);
     }
   });
@@ -55,7 +55,11 @@ describe('KITS', () => {
 
   it('gives each kit its own signature sound on the extra pad', () => {
     const extras = KITS.map((k) => k.pads[roleIndex('extra')]!.name);
-    expect(new Set(extras).size).toBe(3);
+    expect(new Set(extras).size).toBe(4);
+  });
+
+  it('keeps the kits people already have beats on first, in the same order', () => {
+    expect(KITS.slice(0, 3).map((k) => k.id)).toEqual(['club', 'dusty', 'toybox']);
   });
 });
 

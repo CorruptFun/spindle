@@ -75,7 +75,7 @@ the same abilities are reachable at three skill levels. This is the checklist th
 | Capability                                 | Play | Mix | Pro | Stage | Notes                                               |
 | ------------------------------------------ | :--: | :-: | :-: | :---: | --------------------------------------------------- |
 | Eight drum pads                            |  ●   |  ●  |  ●  |  S1   | Several at once; colour marks the drum family       |
-| Three synthesised kits                     |  ●   |  ●  |  ●  |  S1   | Nothing downloaded or licensed                      |
+| Four synthesised kits, one in 808 style    |  ●   |  ●  |  ●  |  S1   | Nothing downloaded or licensed                      |
 | Eight ready-made loops, swapped on the bar |  ●   |  ●  |  ●  |  S1   |                                                     |
 | Record your hits into a loop               |  –   |  ●  |  ●  |  S1   | Snapped to the nearest step; a click keeps the beat |
 | Clear a loop to build your own             |  –   |  ●  |  ●  |  S1   | Reset brings the ready-made loop back               |

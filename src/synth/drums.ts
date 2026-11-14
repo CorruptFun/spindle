@@ -4,6 +4,11 @@
  * light snare, a finger snap, a conga, a rimshot and a cowbell, plus a filter
  * for taking the edge off any one-shot.
  *
+ * The second half of the file is the rest of an 808-style set, built the way
+ * that kind of drum machine builds them: tuned tones and filtered noise, no
+ * recordings. A snappy snare, a clap with a room behind it, hats made of six
+ * clashing square waves, maracas and a clave.
+ *
  * Same voicing rule as instruments.ts: every attack is a short ramp rather
  * than a step, noise is kept below the harsh top octave, and every sound
  * fades to silence instead of stopping dead.
@@ -56,10 +61,16 @@ export function fadeIn(samples: Float32Array, frames: number): Float32Array {
 /**
  * 808-style long kick: a sine that drops from about 115 Hz to a deep 46 Hz and
  * rings. Driven a little, so its harmonics carry it on small speakers that
- * cannot play the fundamental.
+ * cannot play the fundamental. A longer `decaySec` needs a longer `lengthSec`
+ * to ring out in.
  */
-export function boomKick(sampleRate: number, rng: Rng, decaySec = 0.42): Float32Array {
-  const out = buffer(sampleRate, 1.1);
+export function boomKick(
+  sampleRate: number,
+  rng: Rng,
+  decaySec = 0.42,
+  lengthSec = 1.1,
+): Float32Array {
+  const out = buffer(sampleRate, lengthSec);
   const clickCoef = onePoleCoef(1800, sampleRate);
   let phase = 0;
   let click = 0;
@@ -217,5 +228,103 @@ export function cowbell(sampleRate: number): Float32Array {
     out[i] = tone * env * ramp(t, 0.001);
   }
   fadeOut(out, Math.round(0.05 * sampleRate));
+  return out;
+}
+
+/**
+ * Drum-machine snare: two short tones an octave apart for the drum, and a
+ * longer hiss of high noise for the snares under it. Thinner and snappier
+ * than a played snare.
+ */
+export function snappySnare(sampleRate: number, rng: Rng): Float32Array {
+  const out = buffer(sampleRate, 0.42);
+  const hp = new Svf(sampleRate, 2200, 0.7);
+  const lp = onePoleCoef(8000, sampleRate);
+  let noise = 0;
+  for (let i = 0; i < out.length; i++) {
+    const t = i / sampleRate;
+    hp.process(rng.bipolar());
+    noise += lp * (hp.high - noise);
+    const low = Math.sin(TAU * 238 * t) * Math.exp(-t / 0.06);
+    const high = 0.6 * Math.sin(TAU * 476 * t) * Math.exp(-t / 0.035);
+    out[i] = ((low + high) * 0.6 + noise * 0.9 * Math.exp(-t / 0.11)) * ramp(t, 0.001) * 0.6;
+  }
+  fadeOut(out, Math.round(0.04 * sampleRate));
+  return out;
+}
+
+/**
+ * Drum-machine clap: three quick slaps of mid noise, then the same noise
+ * dying away more slowly, like the room answering.
+ */
+export function machineClap(sampleRate: number, rng: Rng): Float32Array {
+  const out = buffer(sampleRate, 0.55);
+  const bp = new Svf(sampleRate, 1100, 1.3);
+  for (let i = 0; i < out.length; i++) {
+    const t = i / sampleRate;
+    bp.process(rng.bipolar());
+    let env = 0;
+    for (const offset of [0, 0.01, 0.02]) {
+      if (t >= offset) env += Math.exp(-(t - offset) / 0.006);
+    }
+    if (t >= 0.03) env += 0.5 * Math.exp(-(t - 0.03) / 0.14);
+    out[i] = bp.band * env * 1.5 * ramp(t, 0.0005);
+  }
+  fadeOut(out, Math.round(0.04 * sampleRate));
+  return out;
+}
+
+/** The six square waves a drum machine's cymbals are made of. They share no harmonics, which is the metal. */
+const METAL_HZ = [205.3, 304.4, 369.6, 522.7, 540, 800];
+
+/**
+ * Drum-machine hi-hat: six square waves that clash, with everything below the
+ * hiss filtered away. `decaySec` about 0.045 for a closed hat, 0.25 for an open one.
+ */
+export function metalHat(sampleRate: number, decaySec: number): Float32Array {
+  const out = buffer(sampleRate, Math.min(1.3, decaySec * 5 + 0.05));
+  const oscillators = METAL_HZ.map((freq) => new Osc(freq, sampleRate));
+  const hp = new Svf(sampleRate, 6500, 0.9);
+  const lp = onePoleCoef(11000, sampleRate);
+  let tone = 0;
+  for (let i = 0; i < out.length; i++) {
+    const t = i / sampleRate;
+    let metal = 0;
+    for (const oscillator of oscillators) metal += oscillator.square();
+    hp.process(metal);
+    tone += lp * (hp.high - tone);
+    out[i] = tone * 0.6 * Math.exp(-t / decaySec) * ramp(t, 0.0005);
+  }
+  fadeOut(out, Math.round(0.01 * sampleRate));
+  return out;
+}
+
+/**
+ * Maracas: one very short breath of high noise, kept to the band between the
+ * snare's rattle and the harsh top octave.
+ */
+export function maracas(sampleRate: number, rng: Rng): Float32Array {
+  const out = buffer(sampleRate, 0.14);
+  const hp = new Svf(sampleRate, 4500, 0.8);
+  const lp = new Svf(sampleRate, 7500, 0.7);
+  for (let i = 0; i < out.length; i++) {
+    const t = i / sampleRate;
+    hp.process(rng.bipolar());
+    const noise = lp.process(hp.high);
+    const env = t < 0.004 ? t / 0.004 : Math.exp(-(t - 0.004) / 0.022);
+    out[i] = noise * env * 1.5;
+  }
+  fadeOut(out, Math.round(0.02 * sampleRate));
+  return out;
+}
+
+/** Clave: two sticks struck together. One clear, high, short tone. */
+export function clave(sampleRate: number): Float32Array {
+  const out = buffer(sampleRate, 0.25);
+  for (let i = 0; i < out.length; i++) {
+    const t = i / sampleRate;
+    out[i] = Math.sin(TAU * 2500 * t) * Math.exp(-t / 0.045) * ramp(t, 0.0008) * 0.8;
+  }
+  fadeOut(out, Math.round(0.03 * sampleRate));
   return out;
 }

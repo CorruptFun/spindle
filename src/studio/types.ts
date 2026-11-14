@@ -37,7 +37,7 @@ export type KitGlyph = 'circle' | 'triangle' | 'square' | 'star';
 
 export interface KitMeta {
   readonly id: string;
-  /** One short, friendly word. */
+  /** One short, friendly word, or the number a kind of drum machine is known by. */
   readonly name: string;
   /** A shape that stands for the kit, so it can be chosen without reading. Unique per kit. */
   readonly glyph: KitGlyph;

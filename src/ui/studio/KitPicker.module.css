@@ -40,6 +40,21 @@
   padding: 0;
 }
 
+/*
+ * The narrowest phones cannot hold four caps that size on one line. There the caps give up a
+ * little width rather than take a second row from the pads.
+ */
+@media (max-width: 359px) {
+  .kits[data-names='false'] {
+    flex-wrap: nowrap;
+  }
+
+  .kits[data-names='false'] .tile {
+    flex: 0 1 var(--touch-play);
+    width: auto;
+  }
+}
+
 .kits[data-names='false'] .glyph {
   width: var(--space-6);
   height: var(--space-6);
@@ -112,8 +127,33 @@
   }
 }
 
+/*
+ * A phone has no room for a shape and a name on every tile. Where names are
+ * shown the name stays and the shape goes, and the tiles share one line, so
+ * the kits never take a second row from the pads.
+ */
+@media (max-width: 480px) {
+  .kits[data-names='true'] {
+    flex-wrap: nowrap;
+  }
+
+  .kits[data-names='true'] .tile {
+    flex: 1 1 auto;
+    padding-inline: var(--space-2);
+  }
+
+  .kits[data-names='true'] .glyph {
+    display: none;
+  }
+
+  .kits[data-names='true'] .tile[aria-busy='true'] .name {
+    animation: breathe var(--dur-pulse) ease-in-out infinite alternate;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .tile[aria-busy='true'] .glyph {
+  .tile[aria-busy='true'] .glyph,
+  .kits[data-names='true'] .tile[aria-busy='true'] .name {
     animation: none;
     opacity: 0.6;
   }

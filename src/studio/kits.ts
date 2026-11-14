@@ -1,5 +1,5 @@
 /**
- * The three drum kits. Every sound is synthesised on the spot (see `synth`),
+ * The drum kits. Every sound is synthesised on the spot (see `synth`),
  * so a kit costs nothing to download and sounds the same everywhere.
  *
  * Each kit fills the same eight roles (PAD_ROLES), so any loop plays on any
@@ -11,17 +11,22 @@ import type { PadSound } from '@/engine/sampler/types';
 import {
   boomKick,
   clap,
+  clave,
   conga,
   cowbell,
   crackSnare,
   createRng,
   fadeIn,
   hat,
+  machineClap,
+  maracas,
+  metalHat,
   punchKick,
   rimshot,
   seedFromString,
   shaker,
   snap,
+  snappySnare,
   snare,
   soften,
   softKick,
@@ -38,6 +43,12 @@ interface KitDefinition {
   readonly meta: KitMeta;
   /** One per pad, in PAD_ROLES order. */
   readonly voices: readonly Voice[];
+  /**
+   * Turns the whole kit down by this many dB (a negative number). For a kit
+   * whose sounds ring on under each other, so that a busy loop peaks about
+   * where the other kits do instead of leaning on the limiter.
+   */
+  readonly trimDb?: number;
 }
 
 /** Loudness is measured over the first 150 ms: about how long the ear takes to judge a hit. */
@@ -147,6 +158,29 @@ const DEFINITIONS: readonly KitDefinition[] = [
       (sr) => soften(woodblock(sr), sr, 5000),
     ],
   },
+  {
+    // The drum machine behind hip-hop and trap: a kick that booms on and on,
+    // a thin snappy snare, a clap with a room behind it, hats made of metal,
+    // maracas and a clave. Tones and noise only, as that machine made them.
+    meta: {
+      id: '808',
+      name: '808',
+      glyph: 'triangle',
+      pads: pads(['Kick', 'Snare', 'Clap', 'Hat', 'Open', 'Tom', 'Maracas', 'Clave']),
+    },
+    voices: [
+      (sr, rng) => boomKick(sr, rng, 0.6, 1.45),
+      (sr, rng) => snappySnare(sr, rng),
+      (sr, rng) => machineClap(sr, rng),
+      (sr) => metalHat(sr, 0.045),
+      (sr) => metalHat(sr, 0.25),
+      (sr, rng) => tom(sr, rng, 125),
+      (sr, rng) => maracas(sr, rng),
+      (sr) => clave(sr),
+    ],
+    // The long kick is still sounding when the snare and clap land on top of it.
+    trimDb: -1.5,
+  },
 ];
 
 export const KITS: readonly KitMeta[] = DEFINITIONS.map((d) => d.meta);
@@ -158,6 +192,7 @@ export const KITS: readonly KitMeta[] = DEFINITIONS.map((d) => d.meta);
 export function renderKit(kitId: string, sampleRate: number): PadSound[] {
   const kit = DEFINITIONS.find((d) => d.meta.id === kitId);
   if (!kit) throw new RangeError(`Unknown kit: ${kitId}`);
+  const trim = 10 ** ((kit.trimDb ?? 0) / 20);
   return PAD_ROLES.map(({ role }, i): PadSound => {
     const voice = kit.voices[i]!;
     // Each pad has its own noise stream, so changing one sound leaves the others alone.
@@ -166,6 +201,7 @@ export function renderKit(kitId: string, sampleRate: number): PadSound[] {
     // non-zero sample, which would tick on every hit.
     const raw = fadeIn(voice(sampleRate, rng), Math.round(0.00025 * sampleRate));
     const samples = level(raw, sampleRate, role);
+    if (trim !== 1) for (let n = 0; n < samples.length; n++) samples[n] = samples[n]! * trim;
     const audio = { sampleRate, channels: [samples] };
     return role === 'closed-hat' || role === 'open-hat'
       ? { audio, chokeGroup: HAT_CHOKE_GROUP }

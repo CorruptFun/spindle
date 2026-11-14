@@ -153,7 +153,8 @@ host. The aim is a drum machine that grows into a small, friendly studio.
 
 ### S1 · Beats — built, waiting on ears
 
-- Eight drum pads and three kits, every sound synthesised in code.
+- Eight drum pads and four kits (Club, Dusty, Toybox and an 808-style kit), every sound
+  synthesised in code.
 - Eight ready-made two-bar loops to switch between. A new loop waits for the bar line, so
   changing never falls out of time.
 - Make them yours: record your own hits into a loop as it plays, or edit one pad's steps at a
