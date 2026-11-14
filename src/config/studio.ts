@@ -14,6 +14,8 @@ export interface StudioModeFeatures {
   readonly swing: boolean;
   /** The layer boxes. Without them every layer still plays; there is just no choosing one. */
   readonly layers: boolean;
+  /** Loops chained into a song, built in a sheet behind the Song button. */
+  readonly song: boolean;
 }
 
 export const STUDIO_MODES: Readonly<Record<SkillMode, StudioModeFeatures>> = {
@@ -24,7 +26,24 @@ export const STUDIO_MODES: Readonly<Record<SkillMode, StudioModeFeatures>> = {
     stepEditor: false,
     swing: false,
     layers: false,
+    song: false,
   },
-  mix: { names: true, record: true, tempo: true, stepEditor: true, swing: false, layers: true },
-  pro: { names: true, record: true, tempo: true, stepEditor: true, swing: true, layers: true },
+  mix: {
+    names: true,
+    record: true,
+    tempo: true,
+    stepEditor: true,
+    swing: false,
+    layers: true,
+    song: true,
+  },
+  pro: {
+    names: true,
+    record: true,
+    tempo: true,
+    stepEditor: true,
+    swing: true,
+    layers: true,
+    song: true,
+  },
 };

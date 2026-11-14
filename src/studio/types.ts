@@ -57,6 +57,9 @@ export interface FactoryLoop {
 /** How many loops the Studio keeps to hand. */
 export const SLOT_COUNT = 8;
 
+/** The most loops a song can hold, one after another. */
+export const SONG_MAX = 16;
+
 /** How many layers a loop is built from. They all play together. */
 export const LAYER_COUNT = 4;
 
@@ -85,6 +88,8 @@ export interface StudioProject {
   /** Exactly SLOT_COUNT loops. */
   readonly slots: readonly StudioLoop[];
   readonly activeSlot: number;
+  /** The song: slot numbers in playing order. A slot may appear many times; at most SONG_MAX. */
+  readonly song: readonly number[];
 }
 
 export type { DrumPattern, PatternBars };

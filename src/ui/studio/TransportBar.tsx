@@ -17,6 +17,10 @@ interface TransportBarProps {
   showSwing: boolean;
   /** Undo, Clear and Reset: what can be done to the whole loop. */
   showLoopTools: boolean;
+  /** The Song button, which opens the song sheet. */
+  showSong: boolean;
+  /** The song is playing: the Song button is lit. */
+  songPlaying: boolean;
   /** There is a recording, clear or reset to take back. */
   canUndo: boolean;
   /** The current loop has something in it. */
@@ -30,12 +34,14 @@ interface TransportBarProps {
   onUndo: () => void;
   onClear: () => void;
   onReset: () => void;
+  onSong: () => void;
 }
 
 /**
  * The Studio's transport: play and stop, and for the older hands record,
- * tempo, swing and the loop tools (undo, clear, reset). Anything a mode does
- * not show is not rendered at all, so in Play mode this is one big button.
+ * tempo, swing, the song and the loop tools (undo, clear, reset). Anything a
+ * mode does not show is not rendered at all, so in Play mode this is one big
+ * button.
  */
 export function TransportBar({
   playing,
@@ -46,6 +52,8 @@ export function TransportBar({
   showTempo,
   showSwing,
   showLoopTools,
+  showSong,
+  songPlaying,
   canUndo,
   canClear,
   canReset,
@@ -56,6 +64,7 @@ export function TransportBar({
   onUndo,
   onClear,
   onReset,
+  onSong,
 }: TransportBarProps) {
   return (
     <div className={styles.bar} role="group" aria-label="Transport">
@@ -111,29 +120,45 @@ export function TransportBar({
         </label>
       )}
 
-      {showLoopTools && (
-        <div className={styles.tools} role="group" aria-label="Loop">
-          <LoopTool
-            mark="undo"
-            name="Undo"
-            label="Undo the last change to the loop"
-            enabled={canUndo}
-            onPress={onUndo}
-          />
-          <LoopTool
-            mark="clear"
-            name="Clear"
-            label="Clear the loop"
-            enabled={canClear}
-            onPress={onClear}
-          />
-          <LoopTool
-            mark="reset"
-            name="Reset"
-            label="Reset the loop to how it came"
-            enabled={canReset}
-            onPress={onReset}
-          />
+      {(showSong || showLoopTools) && (
+        // Song and the loop tools stay together, so on a phone they share the second line.
+        <div className={styles.caps}>
+          {showSong && (
+            <LoopTool
+              mark="song"
+              name="Song"
+              label="Song"
+              enabled
+              pressed={songPlaying}
+              opensSheet
+              onPress={onSong}
+            />
+          )}
+          {showLoopTools && (
+            <div className={styles.tools} role="group" aria-label="Loop">
+              <LoopTool
+                mark="undo"
+                name="Undo"
+                label="Undo the last change to the loop"
+                enabled={canUndo}
+                onPress={onUndo}
+              />
+              <LoopTool
+                mark="clear"
+                name="Clear"
+                label="Clear the loop"
+                enabled={canClear}
+                onPress={onClear}
+              />
+              <LoopTool
+                mark="reset"
+                name="Reset"
+                label="Reset the loop to how it came"
+                enabled={canReset}
+                onPress={onReset}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -147,11 +172,15 @@ interface LoopToolProps {
   label: string;
   /** With nothing to do the cap stays in place, faded, and does nothing. */
   enabled: boolean;
+  /** Lit like the pressed play button, for something that is running. */
+  pressed?: boolean;
+  /** The cap opens a sheet rather than acting at once. */
+  opensSheet?: boolean;
   onPress: () => void;
 }
 
-/** One of the loop tools: a round cap under its printed name. */
-function LoopTool({ mark, name, label, enabled, onPress }: LoopToolProps) {
+/** One of the loop tools, or Song: a round cap under its printed name. */
+function LoopTool({ mark, name, label, enabled, pressed, opensSheet, onPress }: LoopToolProps) {
   return (
     <div className={styles.control}>
       <span className={styles.label} aria-hidden="true">
@@ -161,6 +190,8 @@ function LoopTool({ mark, name, label, enabled, onPress }: LoopToolProps) {
         type="button"
         className={styles.tool}
         aria-disabled={!enabled}
+        aria-pressed={pressed}
+        aria-haspopup={opensSheet ? 'dialog' : undefined}
         aria-label={label}
         onClick={() => {
           if (enabled) onPress();

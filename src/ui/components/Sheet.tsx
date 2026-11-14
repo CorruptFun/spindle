@@ -12,6 +12,8 @@ interface SheetProps {
   /** Something small shown before the heading, such as a deck's badge. */
   lead?: ReactNode;
   style?: CSSProperties;
+  /** Controls that belong beside Close, so they never scroll out of reach. */
+  actions?: ReactNode;
   children: ReactNode;
 }
 
@@ -21,7 +23,7 @@ interface SheetProps {
  * inside it and Escape closes it without extra code. Every sheet in the app is
  * this one, so there is one place where it has to work on every browser.
  */
-export function Sheet({ open, onClose, heading, lead, style, children }: SheetProps) {
+export function Sheet({ open, onClose, heading, lead, style, actions, children }: SheetProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const headingId = useId();
   // Read by the dialog's own events, which can arrive after the parent has already closed it.
@@ -99,7 +101,8 @@ export function Sheet({ open, onClose, heading, lead, style, children }: SheetPr
 
           <div className={styles.body}>{children}</div>
 
-          <footer className={styles.footer}>
+          <footer className={styles.footer} data-actions={actions !== undefined}>
+            {actions}
             <button type="button" className={styles.close} onClick={onClose}>
               <span className={styles.closeMark} aria-hidden="true">
                 <Mark name="close" />

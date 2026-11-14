@@ -73,6 +73,15 @@ const CLEAR = (
     <path d="M7.5 10.5l.6 8.5h7.8l.6-8.5" {...stroke} />
   </>
 );
+/** Three loops in a row, standing on one line. */
+const SONG = (
+  <>
+    <rect x="3" y="6" width="5" height="7" rx="1" fill="currentColor" />
+    <rect x="9.5" y="6" width="5" height="7" rx="1" fill="currentColor" />
+    <rect x="16" y="6" width="5" height="7" rx="1" fill="currentColor" />
+    <path d="M3 17.5h18" {...stroke} />
+  </>
+);
 const LEVELS = (
   <>
     <rect x="4" y="14" width="4" height="6" rx="1" fill="currentColor" />
@@ -115,6 +124,11 @@ const TIPS: Readonly<Record<Workspace, readonly Tip[]>> = {
     {
       mark: CLEAR,
       text: 'Clear empties a loop so you can build your own. Undo takes the last change back.',
+      beyondPlay: true,
+    },
+    {
+      mark: SONG,
+      text: 'Song puts loops in a row and plays them one after another.',
       beyondPlay: true,
     },
     { mark: LOOP, text: 'The shapes at the top change the drum kit.' },

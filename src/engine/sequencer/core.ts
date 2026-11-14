@@ -17,6 +17,12 @@
  * Bar lines fall on every absolute step that is a multiple of STEPS_PER_BAR.
  * Loops are one or two bars long and always start on a bar line, so a step's
  * place in the loop and its place in the bar always agree.
+ *
+ * A chain (a song) is a list of loops played one after another. Each entry
+ * plays all the way through once; at the bar line where it comes round to its
+ * first step again, the next entry starts. The change is made by step count
+ * inside collect, like a bar-line pattern change, so it is exact however late
+ * the timer that drives collection fires.
  */
 import { clamp } from '@/lib/audio-math';
 import { MAX_BPM, MAX_SWING, MIN_BPM, STEPS_PER_BAR, STEPS_PER_BEAT, patternSteps } from './types';
@@ -26,6 +32,12 @@ export const DEFAULT_BPM = 100;
 
 /** Never emit more than this many steps in one call: a guard against a runaway clock. */
 const MAX_STEPS_PER_COLLECT = 4096;
+/**
+ * How many chain entry starts to remember. Only the one sounding and those
+ * collected ahead of the clock matter: the look-ahead is never more than a
+ * couple of bars, so a few is plenty.
+ */
+const MAX_CHAIN_STARTS = 4;
 
 /** Receives one hit: which pad, how hard (0..1], and when on the audio clock. */
 export type HitSink = (pad: number, velocity: number, time: number) => void;
@@ -102,6 +114,15 @@ export class SequencerCore {
   private collectedUntil = -Infinity;
   /** Where the most recent bar-line pattern change landed. */
   private switchTime = -Infinity;
+  /** The loops to play in turn, or null for one loop going round. */
+  private chain: readonly DrumPattern[] | null = null;
+  /** The chain entry being collected. -1 before the first one has begun. */
+  private chainIndex = -1;
+  /**
+   * Where each recent chain entry began, oldest first. Entries are collected a
+   * little ahead, so the one sounding may still be an earlier one.
+   */
+  private chainStarts: { time: number; index: number }[] = [];
   /** Per pad, an absolute step that must not be played (a finger just played it). -1 = none. */
   private readonly suppressed: number[] = [];
 
@@ -173,6 +194,8 @@ export class SequencerCore {
    * from its first step. When stopped, both apply at once.
    */
   setPattern(pattern: DrumPattern, when: 'now' | 'next-bar' = 'now'): void {
+    // An explicit loop wins over a song.
+    this.clearChain();
     if (when === 'next-bar' && this.playingValue) {
       this.pending = pattern;
       return;
@@ -192,11 +215,58 @@ export class SequencerCore {
     this.changeLoop({ from: this.nextStep, base: this.nextStep - index, length });
   }
 
-  /** Begin at the top of the loop; the first step sounds at `firstStepTime`. */
+  /**
+   * Play these loops one after another, each all the way through once, and go
+   * back to the first after the last. Stopped, the chain is kept for start().
+   * Playing with no chain yet, the loop that is playing finishes its pass and
+   * then the first entry begins. Playing with a chain already, the entry that
+   * is playing finishes and the one after it in the new list comes next;
+   * `moved` says where each old place is in the new list when entries were
+   * taken out or put in before it (otherwise places keep their numbers). Null
+   * or an empty list: no chain, and the loop that is playing goes round.
+   */
+  setChain(chain: readonly DrumPattern[] | null, moved?: (index: number) => number): void {
+    if (!chain || chain.length === 0) {
+      this.clearChain();
+      return;
+    }
+    this.chain = chain.slice();
+    // The song replaces a loop change that was waiting for its bar line.
+    this.pending = null;
+    // Entries already begun keep their place in the new list: where `moved` says they went,
+    // or the same number, never past the end. -1 means "before the first", so entry 0 is next.
+    const last = chain.length - 1;
+    const place = (index: number): number => {
+      const next = moved ? moved(index) : index;
+      return Number.isInteger(next) ? Math.max(-1, Math.min(next, last)) : Math.min(index, last);
+    };
+    this.chainIndex = place(this.chainIndex);
+    for (const start of this.chainStarts) start.index = place(start.index);
+  }
+
+  /** The chain entry sounding at `now`. -1 when stopped, with no chain, or before the first entry. */
+  chainPosition(now: number): number {
+    if (!this.playingValue || !this.chain || !Number.isFinite(now)) return -1;
+    let index = -1;
+    for (const start of this.chainStarts) {
+      if (start.time <= now) index = start.index;
+    }
+    return index;
+  }
+
+  /** Begin at the top of the loop, or of the chain; the first step sounds at `firstStepTime`. */
   start(firstStepTime: number): void {
     if (this.pending) {
       this.current = this.pending;
       this.pending = null;
+    }
+    this.chainIndex = -1;
+    this.chainStarts = [];
+    const first = this.chain?.[0];
+    if (first) {
+      this.current = first;
+      this.chainIndex = 0;
+      this.chainStarts.push({ time: firstStepTime, index: 0 });
     }
     this.playingValue = true;
     this.segment = { time: firstStepTime, step: 0, duration: stepDurationSec(this.bpmValue) };
@@ -209,9 +279,11 @@ export class SequencerCore {
     this.suppressed.fill(-1);
   }
 
-  /** Stop. A change waiting for its bar line takes effect now. */
+  /** Stop. A change waiting for its bar line takes effect now. A chain is kept, to start from the top. */
   stop(): void {
     this.playingValue = false;
+    this.chainIndex = -1;
+    this.chainStarts = [];
     if (this.pending) {
       this.current = this.pending;
       this.pending = null;
@@ -240,6 +312,19 @@ export class SequencerCore {
           this.pending = null;
           this.changeLoop({ from: step, base: step, length });
           this.switchTime = grid;
+        } else if (
+          this.chain &&
+          step !== this.loop.base &&
+          mod(step - this.loop.base, this.loop.length) === 0
+        ) {
+          // The entry has played all the way through: the next one starts here.
+          const index = this.chainIndex < 0 ? 0 : (this.chainIndex + 1) % this.chain.length;
+          const next = this.chain[index]!;
+          this.current = next;
+          this.chainIndex = index;
+          this.changeLoop({ from: step, base: step, length: patternSteps(next) });
+          this.chainStarts.push({ time: grid, index });
+          if (this.chainStarts.length > MAX_CHAIN_STARTS) this.chainStarts.shift();
         }
         bar?.(grid);
       }
@@ -322,6 +407,12 @@ export class SequencerCore {
     const seg =
       this.previousSegment && time < this.segment.time ? this.previousSegment : this.segment;
     return seg.step + (time - seg.time) / seg.duration;
+  }
+
+  private clearChain(): void {
+    this.chain = null;
+    this.chainIndex = -1;
+    this.chainStarts = [];
   }
 
   private changeLoop(next: LoopMap): void {

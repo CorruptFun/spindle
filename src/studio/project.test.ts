@@ -13,7 +13,7 @@ import {
 import { FACTORY_LOOPS, factoryLoop } from './loops';
 import { emptyPattern, patternsEqual, setStep } from './pattern';
 import { defaultProject, parseProject, serializeProject } from './project';
-import { LAYER_COUNT, SLOT_COUNT, type StudioProject } from './types';
+import { LAYER_COUNT, SLOT_COUNT, SONG_MAX, type StudioProject } from './types';
 
 function expectSameProject(a: StudioProject, b: StudioProject): void {
   expect({ ...a, slots: undefined }).toEqual({ ...b, slots: undefined });
@@ -38,6 +38,7 @@ describe('defaultProject', () => {
     expect(p.activeSlot).toBe(0);
     expect(p.slots).toHaveLength(SLOT_COUNT);
     p.slots.forEach((slot, i) => expect(slot).toBe(factoryLoop(i)));
+    expect(p.song).toEqual([]);
   });
 
   it('is what a parse of itself gives back', () => {
@@ -66,6 +67,7 @@ describe('serializeProject and parseProject', () => {
       swing: 0.33,
       slots,
       activeSlot: 3,
+      song: [3, 0, 0, 7, 3],
     };
     const back = parseProject(serializeProject(project))!;
     expectSameProject(back, project);
@@ -76,7 +78,7 @@ describe('serializeProject and parseProject', () => {
   it('saves nothing but the project fields', () => {
     const project = { ...defaultProject(), secret: 'x' } as StudioProject;
     expect(Object.keys(JSON.parse(serializeProject(project)) as object).sort()).toEqual(
-      ['activeSlot', 'bpm', 'kitId', 'slots', 'swing', 'version'].sort(),
+      ['activeSlot', 'bpm', 'kitId', 'slots', 'song', 'swing', 'version'].sort(),
     );
   });
 
@@ -188,6 +190,18 @@ describe('parseProject on hostile input', () => {
     }
   });
 
+  it('keeps only real slot numbers in the song, and at most SONG_MAX of them', () => {
+    expect(parse({ ...saved(), song: [1, 2, 2, 7] })!.song).toEqual([1, 2, 2, 7]);
+    expect(parse({ ...saved(), song: [0, -1, 8, 2.5, '3', null, {}, 4, 1e9] })!.song).toEqual([
+      0, 4,
+    ]);
+    const long = Array.from({ length: 40 }, (_, i) => i % SLOT_COUNT);
+    expect(parse({ ...saved(), song: long })!.song).toHaveLength(SONG_MAX);
+    for (const song of [undefined, null, 'song', 3, { 0: 1, length: 1 }]) {
+      expect(parse({ ...saved(), song })!.song).toEqual([]);
+    }
+  });
+
   it('ignores fields it does not know', () => {
     const p = parse({ ...saved(), future: { anything: [1, 2, 3] } })!;
     expectSameProject(p, defaultProject());
@@ -236,6 +250,7 @@ describe('a beat saved before layers existed (version 1)', () => {
     expect(p.bpm).toBe(92);
     expect(p.swing).toBe(0.2);
     expect(p.activeSlot).toBe(5);
+    expect(p.song).toEqual([]);
     p.slots.forEach((loop, slot) => {
       expect(loop.layers).toHaveLength(LAYER_COUNT);
       expect(loop.layers.every((layer) => !layer.muted)).toBe(true);

@@ -166,6 +166,9 @@ host. The aim is a drum machine that grows into a small, friendly studio.
   it, then pick the next. A layer can be switched off or emptied without touching the others.
   Beats saved before layers existed are split into layers by drum family, with nothing lost.
 - Tempo, and swing in Pro. The beat is kept on the device between visits.
+- A song in Mix and Pro: up to sixteen loops in a row, each played all the way through once,
+  then the next, and round again, never out of time. Touching a loop leaves the song and keeps
+  that loop going.
 
 **Done when** a child can make a beat they are proud of with no instructions.
 
@@ -176,7 +179,8 @@ wrong. A note editor for melodies. Loops that hold notes as well as drums.
 
 ### S3 · Songs
 
-Chain loops into a song: first as a simple order, then on a timeline. Mute and solo. A mixer
+Grow the chain of loops (built in S1) into a song timeline: sections of different lengths,
+a loop repeated a set number of times, and a view of the whole song. Mute and solo. A mixer
 channel and effects for each sound.
 
 ### S4 · Record

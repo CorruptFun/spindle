@@ -486,3 +486,227 @@ describe('beats', () => {
     beats.forEach(({ time }, i) => expect(time).toBeCloseTo(T0 + i * beat, 9));
   });
 });
+
+describe('chains (songs)', () => {
+  const step = stepDurationSec(120);
+  const BAR = STEPS_PER_BAR;
+
+  /** Entry `n` of a chain: pad 0 on every step, velocity says which entry and which step. */
+  function entry(n: number, bars: PatternBars = 1): DrumPattern {
+    return numbered(bars, n * 100);
+  }
+
+  /** Which entry a hit came from, and its step in that entry's loop. */
+  function where(hit: Hit): [number, number] {
+    const value = Math.round(hit.velocity * 100) - 1;
+    return [Math.floor(value / 100), value % 100];
+  }
+
+  function songOf(chain: DrumPattern[], bpm = 120): SequencerCore {
+    const core = new SequencerCore(numbered(1, 9000), bpm);
+    core.setChain(chain);
+    core.start(T0);
+    return core;
+  }
+
+  it('plays one-bar and two-bar entries each all the way through, in order, then wraps', () => {
+    const core = songOf([entry(1), entry(2, 2), entry(3)]);
+    const hits = collect(core, T0 + (4 * BAR + BAR) * step - 1e-9);
+    const expected: [number, number][] = [];
+    for (let i = 0; i < BAR; i += 1) expected.push([1, i]);
+    for (let i = 0; i < 2 * BAR; i += 1) expected.push([2, i]);
+    for (let i = 0; i < BAR; i += 1) expected.push([3, i]);
+    for (let i = 0; i < BAR; i += 1) expected.push([1, i]);
+    expect(hits.map(where)).toEqual(expected);
+    hits.forEach((hit, i) => expect(hit.time).toBeCloseTo(T0 + i * step, 9));
+  });
+
+  it('lets the same loop appear more than once', () => {
+    const one = entry(1);
+    const core = songOf([one, one, entry(2)]);
+    const hits = collect(core, T0 + 3 * BAR * step - 1e-9);
+    expect(hits.map((h) => where(h)[0])).toEqual([
+      ...new Array<number>(2 * BAR).fill(1),
+      ...new Array<number>(BAR).fill(2),
+    ]);
+  });
+
+  it('reports the entry that is sounding, not the one collected ahead', () => {
+    const core = songOf([entry(1), entry(2, 2), entry(3)]);
+    expect(core.chainPosition(T0)).toBe(0);
+    // Collected well past the first change.
+    collect(core, T0 + 20 * step);
+    expect(core.chainPosition(T0 + 15.9 * step)).toBe(0);
+    expect(core.chainPosition(T0 + 16 * step)).toBe(1);
+    // The playhead follows each entry's own loop.
+    expect(core.stepPosition(T0 + 15.5 * step)).toBeCloseTo(15.5, 9);
+    expect(core.stepPosition(T0 + 18.5 * step)).toBeCloseTo(2.5, 9);
+    collect(core, T0 + 50 * step);
+    expect(core.chainPosition(T0 + 47.5 * step)).toBe(1);
+    expect(core.stepPosition(T0 + 47.5 * step)).toBeCloseTo(31.5, 9);
+    expect(core.chainPosition(T0 + 48 * step)).toBe(2);
+    expect(core.stepPosition(T0 + 49 * step)).toBeCloseTo(1, 9);
+    collect(core, T0 + 66 * step);
+    expect(core.chainPosition(T0 + 65 * step)).toBe(0);
+  });
+
+  it('gives identical hits and bar lines for one big collect and many small ones', () => {
+    const chain = [entry(1, 2), entry(2), entry(3), entry(1, 2)];
+    const whole = songOf(chain, 137);
+    whole.setSwing(0.37);
+    const bars: number[] = [];
+    const all = collect(whole, T0 + 12, bars);
+
+    const chunked = songOf(chain, 137);
+    chunked.setSwing(0.37);
+    const pieces: Hit[] = [];
+    const chunkBars: number[] = [];
+    let t = T0 - 0.5;
+    let k = 0;
+    while (t < T0 + 12) {
+      t = Math.min(T0 + 12, t + 0.003 + ((k * 7919) % 97) / 1000);
+      k += 1;
+      pieces.push(...collect(chunked, t, chunkBars));
+    }
+    expect(pieces).toEqual(all);
+    expect(chunkBars).toEqual(bars);
+  });
+
+  it('replaces the list mid-song: the entry playing finishes, then the one after it in the new list', () => {
+    const core = songOf([entry(1), entry(2), entry(3)]);
+    // Into entry 2 (index 1).
+    collect(core, T0 + 20 * step);
+    core.setChain([entry(4), entry(5), entry(6)]);
+    const hits = collect(core, T0 + 48 * step - 1e-9);
+    const entries = hits.map((h) => where(h)[0]);
+    expect(entries.slice(0, 12)).toEqual(new Array<number>(12).fill(2));
+    expect(entries.slice(12)).toEqual(new Array<number>(BAR).fill(6));
+    expect(core.chainPosition(T0 + 33 * step)).toBe(2);
+  });
+
+  it('clamps the entry playing into a shorter list', () => {
+    const core = songOf([entry(1), entry(2), entry(3)]);
+    collect(core, T0 + 34 * step);
+    // Entry index 2 is playing; the new list has two, so it counts as the last.
+    core.setChain([entry(4), entry(5)]);
+    expect(core.chainPosition(T0 + 34 * step)).toBe(1);
+    const hits = collect(core, T0 + 64 * step - 1e-9);
+    const firstNew = hits.find((h) => where(h)[0] !== 3)!;
+    expect(where(firstNew)[0]).toBe(4);
+    expect(firstNew.time).toBeCloseTo(T0 + 48 * step, 9);
+  });
+
+  it('started without a chain, lets the loop finish its pass before the song begins', () => {
+    const core = playing(numbered(2, 9000), 120);
+    collect(core, T0 + 20 * step);
+    core.setChain([entry(1)]);
+    expect(core.chainPosition(T0 + 20 * step)).toBe(-1);
+    const hits = collect(core, T0 + 48 * step - 1e-9);
+    const loop = hits.filter((h) => h.velocity > 50);
+    const song = hits.filter((h) => h.velocity < 50);
+    expect(loop).toHaveLength(32 - 20);
+    expect(song.map((h) => where(h))).toEqual(
+      Array.from({ length: BAR }, (_, i) => [1, i] as [number, number]),
+    );
+    expect(song[0]!.time).toBeCloseTo(T0 + 32 * step, 9);
+    expect(core.chainPosition(T0 + 31 * step)).toBe(-1);
+    expect(core.chainPosition(T0 + 32 * step)).toBe(0);
+  });
+
+  it('is dropped by setPattern, either way: the loop asked for wins', () => {
+    for (const when of ['now', 'next-bar'] as const) {
+      const core = songOf([entry(1), entry(2)]);
+      collect(core, T0 + 4 * step);
+      core.setPattern(entry(7), when);
+      expect(core.chainPosition(T0 + 4 * step)).toBe(-1);
+      const hits = collect(core, T0 + 64 * step - 1e-9);
+      expect(hits.some((h) => where(h)[0] === 2)).toBe(false);
+      expect(where(hits.at(-1)!)).toEqual([7, 15]);
+    }
+  });
+
+  it('set to null, leaves the entry playing going round', () => {
+    const core = songOf([entry(1), entry(2)]);
+    collect(core, T0 + 20 * step);
+    core.setChain(null);
+    expect(core.chainPosition(T0 + 20 * step)).toBe(-1);
+    const hits = collect(core, T0 + 80 * step - 1e-9);
+    expect(hits.every((h) => where(h)[0] === 2)).toBe(true);
+    expect(hits.map((h) => where(h)[1])).toEqual(
+      Array.from({ length: 60 }, (_, i) => (i + 4) % BAR),
+    );
+    core.setChain([]);
+    expect(core.chainPosition(T0 + 80 * step)).toBe(-1);
+  });
+
+  it('is kept through stop, and start plays it from the top', () => {
+    const core = songOf([entry(1), entry(2)]);
+    collect(core, T0 + 20 * step);
+    core.stop();
+    expect(core.chainPosition(T0 + 20 * step)).toBe(-1);
+    core.start(T0 + 100);
+    expect(core.chainPosition(T0 + 100)).toBe(0);
+    const hits = collect(core, T0 + 100 + 17 * step - 1e-9);
+    expect(hits.map((h) => where(h))[0]).toEqual([1, 0]);
+    expect(hits.map((h) => where(h))[16]).toEqual([2, 0]);
+  });
+
+  it('copies the list it is given', () => {
+    const chain = [entry(1), entry(2)];
+    const core = songOf(chain);
+    chain.push(entry(3));
+    const hits = collect(core, T0 + 48 * step - 1e-9);
+    expect(hits.some((h) => where(h)[0] === 3)).toBe(false);
+  });
+});
+
+describe('taking an entry out of a song that is playing', () => {
+  const step = stepDurationSec(120);
+  const BAR = STEPS_PER_BAR;
+  /** A one-bar loop whose every hit says which loop it is: velocity = id / 100. */
+  const loopOf = (id: number): DrumPattern => ({
+    bars: 1,
+    lanes: [new Array<number>(BAR).fill(id / 100)],
+  });
+  const ids = (hits: Hit[]): number[] => hits.map((hit) => Math.round(hit.velocity * 100));
+  const playingSong = (list: number[]): SequencerCore => {
+    const core = new SequencerCore(loopOf(9), 120);
+    core.setChain(list.map(loopOf));
+    core.start(T0);
+    return core;
+  };
+  const down = (taken: number) => (place: number) => (place >= taken ? place - 1 : place);
+
+  it('an earlier entry: the one being heard keeps its place and the next one still follows', () => {
+    const core = playingSong([1, 2, 3]);
+    // Into the second entry.
+    collect(core, T0 + 20 * step);
+    core.setChain([2, 3].map(loopOf), down(0));
+    expect(core.chainPosition(T0 + 20 * step)).toBe(0);
+    const heard = ids(collect(core, T0 + 64 * step - 1e-9));
+    // The rest of 2, then 3, then round to 2 again: nothing skipped.
+    expect(heard.slice(0, 12)).toEqual(new Array<number>(12).fill(2));
+    expect(heard.slice(12, 28)).toEqual(new Array<number>(BAR).fill(3));
+    expect(heard.slice(28)).toEqual(new Array<number>(BAR).fill(2));
+  });
+
+  it('the entry being heard: it plays out, then the one that was after it', () => {
+    const core = playingSong([1, 2, 3]);
+    collect(core, T0 + 20 * step);
+    core.setChain([1, 3].map(loopOf), down(1));
+    const heard = ids(collect(core, T0 + 48 * step - 1e-9));
+    expect(heard.slice(0, 12)).toEqual(new Array<number>(12).fill(2));
+    expect(heard.slice(12)).toEqual(new Array<number>(BAR).fill(3));
+  });
+
+  it('the first entry while it is being heard: the new first one comes next', () => {
+    const core = playingSong([1, 2]);
+    collect(core, T0 + 4 * step);
+    core.setChain([2].map(loopOf), down(0));
+    expect(core.chainPosition(T0 + 4 * step)).toBe(-1);
+    const heard = ids(collect(core, T0 + 32 * step - 1e-9));
+    expect(heard.slice(0, 12)).toEqual(new Array<number>(12).fill(1));
+    expect(heard.slice(12)).toEqual(new Array<number>(BAR).fill(2));
+    expect(core.chainPosition(T0 + 20 * step)).toBe(0);
+  });
+});

@@ -149,6 +149,15 @@ export class Sequencer implements SequencerControl {
     this.core.setPattern(pattern, when);
   }
 
+  setChain(chain: readonly DrumPattern[] | null, moved?: (index: number) => number): void {
+    this.core.setChain(chain, moved);
+  }
+
+  chainPosition(): number {
+    // Like changePending: an entry onBar has announced counts as sounding.
+    return this.core.chainPosition(Math.max(this.context.currentTime, this.announcedBar));
+  }
+
   setClick(on: boolean): void {
     this.clickOn = on;
     // Off means off now, not after the clicks already scheduled a moment ahead.

@@ -1,0 +1,19 @@
+/* A loop's first bar in the drum families' colours. Its tile decides the size. */
+.picture {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.hit {
+  fill: var(--family);
+}
+
+/* A ghost note: there, but quieter. */
+.hit[data-soft='true'] {
+  opacity: 0.5;
+}
+
+.rest {
+  fill: var(--hairline);
+}

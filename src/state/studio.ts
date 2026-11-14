@@ -1,8 +1,9 @@
 import { create } from 'zustand';
 import { BRAND } from '@/config/brand';
 import type { AudioEngine } from '@/engine/AudioEngine';
-import { STEPS_PER_BAR } from '@/engine/sequencer/types';
+import { STEPS_PER_BAR, type DrumPattern } from '@/engine/sequencer/types';
 import {
+  addToSong,
   clearLayer,
   clearLoop,
   defaultProject,
@@ -15,6 +16,7 @@ import {
   mixLoop,
   parseProject,
   recordIntoLayer,
+  removeFromSong,
   renderKit,
   serializeProject,
   setLayerMuted,
@@ -91,6 +93,10 @@ interface StudioState {
    * Undoing swaps it with the loop as it is, so a second Undo puts the change back.
    */
   undo: LoopSnapshot | null;
+  /** The song is playing: its loops one after another, rather than one loop going round. */
+  songPlaying: boolean;
+  /** The song entry being heard, for the screen. -1 when the song is not playing. */
+  songPosition: number;
 
   /** Connect to the audio engine once it exists: load the kit and hand over the beat. */
   attach: (engine: AudioEngine) => void;
@@ -118,6 +124,13 @@ interface StudioState {
   clearLayer: () => void;
   /** Take back the last recording, clear or reset of the current loop; again to put it back. */
   undoLoop: () => void;
+  /** Put a loop at the end of the song. */
+  addToSong: (slot: number) => void;
+  /** Take the entry at this place out of the song. */
+  removeFromSong: (index: number) => void;
+  clearSong: () => void;
+  /** Play the song from the top, or stop it. */
+  toggleSong: () => void;
 }
 
 let engine: AudioEngine | null = null;
@@ -165,6 +178,42 @@ export const useStudio = create<StudioState>()((set, get) => {
     replaceActiveLoop(loop);
   };
 
+  /** What the sequencer plays for the song: each entry's mix, in order. */
+  const songMixes = (project: StudioProject): DrumPattern[] =>
+    project.song.flatMap((slot) => {
+      const loop = project.slots[slot];
+      return loop ? [mixLoop(loop)] : [];
+    });
+
+  /**
+   * Touching the loop leaves the song: the loop that is sounding stays the
+   * active one and keeps going round, so the change is heard on it.
+   */
+  const leaveSong = (): void => {
+    if (!get().songPlaying) return;
+    engine?.sequencer.setChain(null);
+    // The next entry may already be collected a moment ahead of the bar line the screen has
+    // shown. Handing over the loop on screen keeps the sound and the screen in agreement;
+    // when they already agree it carries on from the same step, unheard.
+    engine?.sequencer.setPattern(mixLoop(activeLoop(get().project)), 'now');
+    set({ songPlaying: false, songPosition: -1 });
+  };
+
+  /** A new song list. While the song plays it carries on with the new list; empty, it ends. */
+  const changeSong = (song: readonly number[], moved?: (index: number) => number): void => {
+    if (song === get().project.song) return;
+    const project = update({ song });
+    if (!get().songPlaying) return;
+    if (song.length === 0) {
+      leaveSong();
+      return;
+    }
+    engine?.sequencer.setChain(songMixes(project), moved);
+    // -1 for a moment when the entry being heard was itself taken out: nothing is ringed
+    // until the next one begins.
+    set({ songPosition: engine?.sequencer.chainPosition() ?? -1 });
+  };
+
   /** Recording on or off. The click runs with it: an empty loop gives nothing to play along to. */
   const setRecording = (recording: boolean): void => {
     takeSlot = null;
@@ -191,6 +240,8 @@ export const useStudio = create<StudioState>()((set, get) => {
     selectedLayer: 0,
     bar: 0,
     undo: null,
+    songPlaying: false,
+    songPosition: -1,
 
     attach(nextEngine) {
       if (engine === nextEngine) return;
@@ -204,6 +255,15 @@ export const useStudio = create<StudioState>()((set, get) => {
       engine.sequencer.setClick(get().recording);
       // A queued loop becomes the current one when its bar line arrives.
       engine.sequencer.onBar = () => {
+        // In a song, the loop on screen follows the one being heard.
+        if (get().songPlaying) {
+          const position = engine?.sequencer.chainPosition() ?? -1;
+          const slot = get().project.song[position];
+          if (position < 0 || position === get().songPosition || slot === undefined) return;
+          if (slot !== get().project.activeSlot) update({ activeSlot: slot });
+          set({ songPosition: position, bar: 0 });
+          return;
+        }
         const { queuedSlot } = get();
         if (queuedSlot === null || engine?.sequencer.changePending) return;
         update({ activeSlot: queuedSlot });
@@ -247,6 +307,8 @@ export const useStudio = create<StudioState>()((set, get) => {
         return;
       }
       void engine.resume();
+      // Play always means the loop on screen, never the song.
+      engine.sequencer.setChain(null);
       engine.sequencer.setPattern(mixLoop(activeLoop(get().project)), 'now');
       engine.sequencer.start();
       set({ playing: true });
@@ -254,12 +316,14 @@ export const useStudio = create<StudioState>()((set, get) => {
 
     stop() {
       engine?.sequencer.stop();
+      engine?.sequencer.setChain(null);
       setRecording(false);
-      set({ playing: false, queuedSlot: null });
+      set({ playing: false, queuedSlot: null, songPlaying: false, songPosition: -1 });
     },
 
     toggleRecord() {
       const recording = !get().recording;
+      if (recording) leaveSong();
       setRecording(recording);
       // Nothing can be recorded into a loop that is not running, so Record starts it.
       if (recording && !get().playing) get().togglePlay();
@@ -270,6 +334,7 @@ export const useStudio = create<StudioState>()((set, get) => {
     },
 
     selectSlot(slot) {
+      leaveSong();
       const { project, playing, queuedSlot } = get();
       const loop = project.slots[slot];
       if (!engine || !loop) return;
@@ -301,12 +366,14 @@ export const useStudio = create<StudioState>()((set, get) => {
         return;
       }
       // The chosen layer again: switch it off, or back on. Not something Undo takes back.
+      leaveSong();
       const loop = activeLoop(project);
       const muted = loop.layers[layer]?.muted ?? false;
       replaceActiveLoop(setLayerMuted(loop, layer, !muted));
     },
 
     toggleStep(step) {
+      leaveSong();
       const { project, selectedPad, selectedLayer, bar } = get();
       const loop = activeLoop(project);
       const next = toggleLayerStep(loop, selectedLayer, selectedPad, bar * STEPS_PER_BAR + step);
@@ -333,17 +400,20 @@ export const useStudio = create<StudioState>()((set, get) => {
     },
 
     resetLoop() {
+      leaveSong();
       const { project } = get();
       const factory = factoryLoop(project.activeSlot);
       if (factory && isLoopEdited(project, project.activeSlot)) wipe(factory);
     },
 
     clearLoop() {
+      leaveSong();
       const current = activeLoop(get().project);
       if (!isLoopEmpty(current)) wipe(clearLoop(current));
     },
 
     clearLayer() {
+      leaveSong();
       const { project, selectedLayer } = get();
       const current = activeLoop(project);
       const layer = current.layers[selectedLayer];
@@ -351,12 +421,47 @@ export const useStudio = create<StudioState>()((set, get) => {
     },
 
     undoLoop() {
+      leaveSong();
       const { undo, project } = get();
       if (!undo || undo.slot !== project.activeSlot) return;
       set({ undo: { slot: undo.slot, loop: activeLoop(project) } });
       // Whatever is recorded next is a new recording, with its own Undo.
       takeSlot = null;
       replaceActiveLoop(undo.loop);
+    },
+
+    addToSong(slot) {
+      changeSong(addToSong(get().project.song, slot));
+    },
+
+    removeFromSong(index) {
+      // Everything after the entry taken out moves down one place; the entry itself, if it is
+      // the one being heard, plays to its end and the one that was after it comes next.
+      changeSong(removeFromSong(get().project.song, index), (place) =>
+        place >= index ? place - 1 : place,
+      );
+    },
+
+    clearSong() {
+      if (get().project.song.length > 0) changeSong([]);
+    },
+
+    toggleSong() {
+      if (!engine) return;
+      if (get().songPlaying) {
+        get().stop();
+        return;
+      }
+      const { project } = get();
+      const first = project.song[0];
+      if (first === undefined) return;
+      // Whatever was playing stops; the song starts from its first entry.
+      get().stop();
+      void engine.resume();
+      engine.sequencer.setChain(songMixes(project));
+      engine.sequencer.start();
+      if (first !== project.activeSlot) update({ activeSlot: first });
+      set({ playing: true, songPlaying: true, songPosition: 0, queuedSlot: null, bar: 0 });
     },
   };
 });

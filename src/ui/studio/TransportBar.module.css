@@ -18,6 +18,13 @@
   gap: var(--space-3);
 }
 
+/* Song, then the loop tools, as one row of caps. */
+.caps {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
 /* What can be done to the whole loop: undo, clear, reset. */
 .tools {
   display: flex;
@@ -114,6 +121,13 @@
 /* Record: a red lamp on the cap. Recording, the whole cap is lit red. */
 .record {
   color: var(--record);
+}
+
+/* Song while the song plays: lit like the pressed play button. */
+.tool[aria-pressed='true'] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--chassis);
 }
 
 .record[aria-pressed='true'] {
@@ -234,7 +248,11 @@
   }
 }
 
-/* A phone: everything on one line, a little smaller, and without the printed labels. */
+/*
+ * A phone: a little smaller, and without the printed labels. Play, record and
+ * tempo fill the first line; swing and the caps share the second, which is why
+ * the caps sit closer together and the swing slot is shorter here.
+ */
 @media (max-width: 480px) {
   .bar {
     gap: var(--space-2) var(--space-3);
@@ -258,12 +276,32 @@
     gap: var(--space-1);
   }
 
+  .caps,
   .tools {
-    gap: var(--space-2);
+    gap: var(--space-1);
+  }
+
+  .swing {
+    width: calc(var(--touch-min) * 2 + var(--space-2));
   }
 
   .readout {
     min-width: calc(var(--space-7) + var(--space-2));
     padding: var(--space-1) var(--space-2);
+  }
+}
+
+/*
+ * A tablet held upright: everything still fits on one line if the groups and
+ * the caps sit a little closer together.
+ */
+@media (min-width: 481px) and (max-width: 899px) {
+  .bar {
+    column-gap: var(--space-4);
+  }
+
+  .caps,
+  .tools {
+    gap: var(--space-2);
   }
 }

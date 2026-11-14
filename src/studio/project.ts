@@ -8,7 +8,8 @@
  *
  * Version 1 kept each loop as one flat pattern. Version 2 keeps its layers.
  * A version 1 beat is split into layers by drum family when it is read, so
- * nothing saved before layers existed is lost.
+ * nothing saved before layers existed is lost. A song was added to version 2
+ * later; a beat saved without one simply has an empty song.
  */
 
 import { clamp } from '@/lib';
@@ -17,6 +18,7 @@ import { KITS } from './kits';
 import { loopFromPattern, normalizeLoop } from './layers';
 import { FACTORY_LOOPS, factoryLoop } from './loops';
 import { normalizePattern } from './pattern';
+import { normalizeSong } from './song';
 import { SLOT_COUNT, type StudioLoop, type StudioProject } from './types';
 
 /** Far bigger than any real project (about 30 kB), small enough to parse in an instant. */
@@ -34,6 +36,7 @@ export function defaultProject(): StudioProject {
     swing: 0,
     slots: Array.from({ length: SLOT_COUNT }, (_, slot) => factory(slot)),
     activeSlot: 0,
+    song: [],
   };
 }
 
@@ -52,6 +55,7 @@ export function serializeProject(project: StudioProject): string {
       })),
     })),
     activeSlot: project.activeSlot,
+    song: project.song.slice(),
   });
 }
 
@@ -102,5 +106,7 @@ export function parseProject(text: string | null): StudioProject | null {
     swing: swing === null ? defaults.swing : clamp(swing, 0, MAX_SWING),
     slots,
     activeSlot: active === null ? 0 : clamp(Math.round(active), 0, SLOT_COUNT - 1),
+    // Version 1 had no song; normalizeSong gives an empty one for anything missing.
+    song: normalizeSong(record['song']),
   };
 }

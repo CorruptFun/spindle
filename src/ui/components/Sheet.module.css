@@ -101,6 +101,18 @@
   border-top: 1px solid var(--hairline);
 }
 
+/* With actions of its own, the sheet's controls sit in a row and Close takes what is left. */
+.footer[data-actions='true'] {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.footer[data-actions='true'] .close {
+  flex: 1;
+  min-width: 0;
+}
+
 .close {
   display: flex;
   align-items: center;

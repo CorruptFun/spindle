@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ModeDefinition } from '@/config/modes';
 import { STUDIO_MODES } from '@/config/studio';
 import { STEPS_PER_BAR } from '@/engine/sequencer/types';
@@ -20,6 +20,7 @@ import { KitPicker } from '@/ui/studio/KitPicker';
 import { LayerStrip } from '@/ui/studio/LayerStrip';
 import { LoopSlots } from '@/ui/studio/LoopSlots';
 import { PadGrid } from '@/ui/studio/PadGrid';
+import { SongSheet } from '@/ui/studio/SongSheet';
 import { StepRow } from '@/ui/studio/StepRow';
 import { TransportBar } from '@/ui/studio/TransportBar';
 import styles from './Studio.module.css';
@@ -54,6 +55,8 @@ export function Studio({ mode }: { mode: ModeDefinition }) {
   const selectedLayer = useStudio((state) => state.selectedLayer);
   const bar = useStudio((state) => state.bar);
   const undo = useStudio((state) => state.undo);
+  const songPlaying = useStudio((state) => state.songPlaying);
+  const songPosition = useStudio((state) => state.songPosition);
 
   const hitPad = useStudio((state) => state.hitPad);
   const togglePlay = useStudio((state) => state.togglePlay);
@@ -70,6 +73,14 @@ export function Studio({ mode }: { mode: ModeDefinition }) {
   const clearLoop = useStudio((state) => state.clearLoop);
   const undoLoop = useStudio((state) => state.undoLoop);
   const stopRecording = useStudio((state) => state.stopRecording);
+  const addToSong = useStudio((state) => state.addToSong);
+  const removeFromSong = useStudio((state) => state.removeFromSong);
+  const clearSong = useStudio((state) => state.clearSong);
+  const toggleSong = useStudio((state) => state.toggleSong);
+
+  const [songOpen, setSongOpen] = useState(false);
+  const openSong = useCallback(() => setSongOpen(true), []);
+  const closeSong = useCallback(() => setSongOpen(false), []);
 
   // Recording must never stay on in a mode that shows no record button.
   useEffect(() => {
@@ -198,6 +209,8 @@ export function Studio({ mode }: { mode: ModeDefinition }) {
           showTempo={features.tempo}
           showSwing={features.swing}
           showLoopTools={features.stepEditor}
+          showSong={features.song}
+          songPlaying={songPlaying}
           canUndo={canUndoLoop(undo, project)}
           canClear={!isLoopEmpty(loop)}
           canReset={isLoopEdited(project, project.activeSlot)}
@@ -208,11 +221,28 @@ export function Studio({ mode }: { mode: ModeDefinition }) {
           onUndo={undoLoop}
           onClear={clearLoop}
           onReset={resetLoop}
+          onSong={openSong}
         />
         <div className={styles.meter}>
           <LevelMeter read={readLevel} label="Drums level" orientation="horizontal" />
         </div>
       </div>
+
+      {features.song && (
+        // The song's tiles share the loop tiles' cached mixes.
+        <SongSheet
+          open={songOpen}
+          onClose={closeSong}
+          loops={slots}
+          song={project.song}
+          position={songPosition}
+          playing={songPlaying}
+          onAdd={addToSong}
+          onRemove={removeFromSong}
+          onClear={clearSong}
+          onTogglePlay={toggleSong}
+        />
+      )}
     </section>
   );
 }

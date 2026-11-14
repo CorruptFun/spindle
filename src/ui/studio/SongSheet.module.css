@@ -1,0 +1,227 @@
+/*
+ * Building a song. The sheet itself is ui/components/Sheet; the tiles are the
+ * loop tiles in the Studio, the play button and the bin are the transport's.
+ */
+.groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+/* Hardware-style label above each group. */
+.label {
+  margin-bottom: var(--space-2);
+  color: var(--ink-dim);
+  font-size: var(--text-xs);
+  font-weight: 650;
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+}
+
+/* Four tiles a line on a phone and eight on anything larger, like the loops in the Studio. */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-2);
+  /* A numbered or bulleted list by nature; here the tiles carry their own numbers. */
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 640px) {
+  .tiles {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
+}
+
+/* A loop: its picture, its name underneath. Raised, and it goes down when pressed. */
+.tile {
+  --ring: 2px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: var(--touch-min);
+  padding: var(--space-3) var(--space-2);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-control);
+  background: var(--panel-raised);
+  cursor: pointer;
+  transition:
+    border-color var(--dur) var(--ease-out),
+    opacity var(--dur) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+@media (hover: hover) {
+  .tile:hover {
+    border-color: var(--ink-faint);
+  }
+}
+
+.tile:active {
+  transform: scale(0.96);
+}
+
+/* The song is full: the loops stay in place, faded, and do nothing. */
+.tile[aria-disabled='true'] {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.tile[aria-disabled='true']:active {
+  transform: none;
+}
+
+/* The ring for the entry being heard, drawn outside the hairline as on the loop tiles. */
+.tile::after {
+  content: '';
+  position: absolute;
+  inset: calc(-1 * var(--ring));
+  border: var(--ring) solid transparent;
+  border-radius: calc(var(--radius-control) + var(--ring) - 1px);
+  pointer-events: none;
+  transition: border-color var(--dur) var(--ease-out);
+}
+
+.tile[data-active='true']::after {
+  border-color: var(--ink);
+}
+
+/* An entry in the song has room at the top for its place number. */
+.entry {
+  padding-top: var(--space-5);
+}
+
+.place {
+  position: absolute;
+  top: var(--space-1);
+  left: var(--space-2);
+  color: var(--ink-dim);
+  font-size: var(--text-xs);
+  font-weight: 650;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+}
+
+.tile[data-active='true'] .place {
+  color: var(--ink);
+}
+
+.name {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--ink-dim);
+  font-size: var(--text-xs);
+  font-weight: 650;
+  line-height: 1.25;
+  text-align: center;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.tile[data-active='true'] .name {
+  color: var(--ink);
+}
+
+/* No song yet: one open place, like an empty slot. */
+.empty {
+  min-height: calc(var(--touch-min) + var(--space-5));
+  border: 1px dashed var(--ink-faint);
+  border-radius: var(--radius-control);
+}
+
+.note {
+  color: var(--ink-dim);
+  font-size: var(--text-s);
+}
+
+/* Play / stop: the transport's play button, at the size it has on a phone. */
+.play {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: calc(var(--touch-min) + var(--space-2));
+  height: calc(var(--touch-min) + var(--space-2));
+  padding: 0;
+  border: 1px solid var(--hairline);
+  border-radius: 50%;
+  background: var(--panel-raised);
+  color: var(--ink);
+  cursor: pointer;
+  transition:
+    background-color var(--dur) var(--ease-out),
+    border-color var(--dur) var(--ease-out),
+    color var(--dur) var(--ease-out),
+    opacity var(--dur) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.play svg {
+  width: 44%;
+  height: 44%;
+  fill: currentColor;
+}
+
+.play[aria-pressed='true'] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--chassis);
+}
+
+/* The bin: the transport's round cap. */
+.clear {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--touch-min);
+  height: var(--touch-min);
+  padding: 0;
+  border: 1px solid var(--hairline);
+  border-radius: 50%;
+  background: var(--panel-raised);
+  color: var(--ink);
+  cursor: pointer;
+  transition:
+    border-color var(--dur) var(--ease-out),
+    opacity var(--dur) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.mark {
+  width: 44%;
+  height: 44%;
+}
+
+.play:active,
+.clear:active {
+  transform: scale(0.94);
+}
+
+/* No song: nothing to play or clear. The buttons stay, faded, and do nothing. */
+.play[aria-disabled='true'],
+.clear[aria-disabled='true'] {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.play[aria-disabled='true']:active,
+.clear[aria-disabled='true']:active {
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile:active,
+  .play:active,
+  .clear:active {
+    transform: none;
+  }
+}

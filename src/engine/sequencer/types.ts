@@ -61,6 +61,21 @@ export interface SequencerControl {
   readonly changePending: boolean;
 
   /**
+   * Play loops one after another (a song), each all the way through once, then
+   * from the first again. Stopped, start() begins at the first. Playing, the
+   * loop or entry that is sounding finishes before the next one comes in.
+   * Null or an empty list ends the song: the loop that is sounding goes round.
+   * Any setPattern call ends it too; stop() keeps it.
+   *
+   * Changing the list while it plays: `moved` maps each old place to its place
+   * in the new list (an entry taken out earlier in the song moves the later
+   * ones down by one), so the order carries on unbroken.
+   */
+  setChain(chain: readonly DrumPattern[] | null, moved?: (index: number) => number): void;
+  /** Which entry of the song is sounding, or -1 when stopped or there is no song. */
+  chainPosition(): number;
+
+  /**
    * A finger hit `pad` just now while recording. Writes the hit into the
    * nearest step of the loop (wrapping at the end) and makes sure the sequencer
    * does not immediately play that same hit a second time. Returns the new

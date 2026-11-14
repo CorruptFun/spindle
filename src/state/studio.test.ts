@@ -12,6 +12,7 @@ import {
   mixLoop,
   patternsEqual,
   PAD_ROLES,
+  SONG_MAX,
 } from '@/studio';
 import { canUndoLoop, isLoopEdited, useStudio } from './studio';
 
@@ -26,6 +27,10 @@ function standIn() {
     click: false,
     /** The step the next recorded hit lands on. */
     hitStep: 0,
+    /** The song it was last handed, or null. Like the real one, a loop change ends it. */
+    chain: null as readonly DrumPattern[] | null,
+    /** The song entry the test says is sounding. */
+    position: -1,
     onBar: null as (() => void) | null,
     bpm: 100,
     swing: 0,
@@ -46,6 +51,16 @@ function standIn() {
     setSwing() {},
     setPattern(next: DrumPattern) {
       pattern = next;
+      sequencer.chain = null;
+    },
+    setChain(chain: readonly DrumPattern[] | null, moved?: (index: number) => number) {
+      sequencer.chain = chain && chain.length > 0 ? chain : null;
+      if (moved && sequencer.chain) {
+        sequencer.position = Math.max(-1, Math.min(moved(sequencer.position), chain!.length - 1));
+      }
+    },
+    chainPosition() {
+      return playing && sequencer.chain ? sequencer.position : -1;
     },
     setClick(on: boolean) {
       sequencer.click = on;
@@ -101,6 +116,161 @@ beforeEach(() => {
     bar: 0,
   });
   sequencer.setPattern(mix());
+  sequencer.position = -1;
+});
+
+/** A bar line arrives with song entry `position` sounding. */
+function barLine(position: number): void {
+  sequencer.position = position;
+  sequencer.onBar?.();
+}
+
+/** A song of these slots, playing from the top. */
+function playSong(...slots: number[]): void {
+  for (const slot of slots) studio().addToSong(slot);
+  studio().toggleSong();
+}
+
+describe('the song', () => {
+  it('adds loops to the end, takes entries out, and clears', () => {
+    studio().addToSong(3);
+    studio().addToSong(1);
+    studio().addToSong(3);
+    expect(studio().project.song).toEqual([3, 1, 3]);
+    studio().removeFromSong(0);
+    expect(studio().project.song).toEqual([1, 3]);
+    studio().clearSong();
+    expect(studio().project.song).toEqual([]);
+  });
+
+  it('holds at most SONG_MAX loops', () => {
+    for (let i = 0; i < SONG_MAX + 3; i += 1) studio().addToSong(i % 8);
+    expect(studio().project.song).toHaveLength(SONG_MAX);
+  });
+
+  it('starts from the top with the mix of each entry, and the first loop on screen', () => {
+    useStudio.setState({ bar: 1 });
+    playSong(2, 5, 2);
+    const slots = studio().project.slots;
+    expect(sequencer.playing).toBe(true);
+    expect(sequencer.chain).toHaveLength(3);
+    [2, 5, 2].forEach((slot, i) =>
+      expect(patternsEqual(sequencer.chain![i]!, mixLoop(slots[slot]!))).toBe(true),
+    );
+    expect(studio().playing).toBe(true);
+    expect(studio().songPlaying).toBe(true);
+    expect(studio().songPosition).toBe(0);
+    expect(studio().project.activeSlot).toBe(2);
+    expect(studio().bar).toBe(0);
+  });
+
+  it('does nothing when there is no song', () => {
+    studio().toggleSong();
+    expect(studio().songPlaying).toBe(false);
+    expect(sequencer.playing).toBe(false);
+  });
+
+  it('stops whatever was playing, recording too, before it starts', () => {
+    studio().toggleRecord();
+    studio().addToSong(4);
+    studio().toggleSong();
+    expect(studio().recording).toBe(false);
+    expect(sequencer.click).toBe(false);
+    expect(studio().songPlaying).toBe(true);
+  });
+
+  it('shows the loop being heard when a bar line brings the next entry', () => {
+    playSong(1, 6);
+    useStudio.setState({ bar: 1 });
+    barLine(0);
+    expect(studio().project.activeSlot).toBe(1);
+    expect(studio().bar).toBe(1);
+    barLine(1);
+    expect(studio().songPosition).toBe(1);
+    expect(studio().project.activeSlot).toBe(6);
+    expect(studio().bar).toBe(0);
+    barLine(0);
+    expect(studio().project.activeSlot).toBe(1);
+  });
+
+  it('carries on with a changed list, and ends when it is emptied', () => {
+    playSong(1, 6);
+    studio().addToSong(7);
+    expect(sequencer.chain).toHaveLength(3);
+    expect(patternsEqual(sequencer.chain![2]!, mixLoop(studio().project.slots[7]!))).toBe(true);
+    studio().removeFromSong(0);
+    expect(sequencer.chain).toHaveLength(2);
+    expect(studio().songPlaying).toBe(true);
+
+    studio().clearSong();
+    expect(studio().songPlaying).toBe(false);
+    expect(studio().songPosition).toBe(-1);
+    expect(sequencer.chain).toBeNull();
+    // The loop that was sounding keeps going round.
+    expect(studio().playing).toBe(true);
+    expect(sequencer.playing).toBe(true);
+  });
+
+  it('is stopped by Stop, and by the song button again', () => {
+    playSong(2);
+    studio().stop();
+    expect(studio().songPlaying).toBe(false);
+    expect(studio().playing).toBe(false);
+    expect(sequencer.chain).toBeNull();
+
+    studio().toggleSong();
+    expect(studio().songPlaying).toBe(true);
+    studio().toggleSong();
+    expect(studio().songPlaying).toBe(false);
+    expect(sequencer.playing).toBe(false);
+  });
+
+  it('is left for the loop by Play: Play means the loop on screen', () => {
+    playSong(2);
+    studio().togglePlay();
+    studio().togglePlay();
+    expect(studio().songPlaying).toBe(false);
+    expect(sequencer.chain).toBeNull();
+    expect(patternsEqual(sequencer.pattern, mix())).toBe(true);
+  });
+
+  it.each<[string, () => void]>([
+    ['picking a loop', () => studio().selectSlot(3)],
+    ['editing a step', () => studio().toggleStep(5)],
+    ['switching recording on', () => studio().toggleRecord()],
+    ['clearing the loop', () => studio().clearLoop()],
+    ['clearing a layer', () => studio().clearLayer()],
+    ['resetting the loop', () => studio().resetLoop()],
+    ['Undo', () => studio().undoLoop()],
+    ['switching a layer off', () => studio().selectLayer(0)],
+  ])('is left by %s, and the loop sounding keeps going', (_, touch) => {
+    playSong(5, 1);
+    barLine(1);
+    touch();
+    expect(studio().songPlaying).toBe(false);
+    expect(studio().songPosition).toBe(-1);
+    expect(sequencer.chain).toBeNull();
+    expect(studio().playing).toBe(true);
+    expect(sequencer.playing).toBe(true);
+  });
+
+  it('stays the active loop when the song is left by an edit', () => {
+    playSong(5, 1);
+    barLine(1);
+    studio().toggleStep(5);
+    expect(studio().project.activeSlot).toBe(1);
+    expect(patternsEqual(sequencer.pattern, mix())).toBe(true);
+  });
+
+  it('is not left by playing the pads along with it', () => {
+    playSong(5, 1);
+    hit(pad('snare'), 4);
+    expect(studio().songPlaying).toBe(true);
+    expect(sequencer.chain).not.toBeNull();
+    // Choosing a different layer only chooses it.
+    studio().selectLayer(2);
+    expect(studio().songPlaying).toBe(true);
+  });
 });
 
 describe('clearing a loop', () => {
